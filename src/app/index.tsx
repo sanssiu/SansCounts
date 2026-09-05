@@ -1,12 +1,14 @@
 import { useState } from "react";
 import {
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
-  Pressable,
-  Modal,
-  ScrollView,
 } from "react-native";
 
 export default function Index() {
@@ -23,9 +25,7 @@ export default function Index() {
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
 
-  const [picker, setPicker] = useState<
-    "day" | "month" | "year" | null
-  >(null);
+  const [picker, setPicker] = useState<"day" | "month" | "year" | null>(null);
 
   const [username, setUsername] = useState("");
   const [sassword, setSassword] = useState("");
@@ -39,25 +39,24 @@ export default function Index() {
   const [loginSassword, setLoginSassword] = useState("");
 
   // =========================
-  // AGE
+  // VALIDATIONS & LOGIC
   // =========================
 
+  const isPage1Valid = firstName.trim() !== "" && lastName.trim() !== "";
+  const isPage3Valid = username.trim() !== "";
+  const isPage4Valid = sassword.trim() !== "";
+  const isPage7Valid = loginUsername.trim() !== "" && loginSassword.trim() !== "";
+
   const calculateAge = () => {
-    if (day === null || month === null || year === null) {
-      return null;
-    }
+    if (day === null || month === null || year === null) return null;
 
     const today = new Date();
-
-    let calculatedAge =
-      today.getFullYear() - year;
-
+    let calculatedAge = today.getFullYear() - year;
     const currentMonth = today.getMonth() + 1;
 
     if (
       currentMonth < month ||
-      (currentMonth === month &&
-        today.getDate() < day)
+      (currentMonth === month && today.getDate() < day)
     ) {
       calculatedAge--;
     }
@@ -66,9 +65,54 @@ export default function Index() {
   };
 
   const age = calculateAge();
+  const isOldEnough = age !== null && age >= 13;
 
-  const isOldEnough =
-    age !== null && age >= 7;
+  // Header Component
+  const LogoHeader = () => (
+    <View style={styles.logoHeaderContainer}>
+      <Text style={styles.logoText}>SansCounts</Text>
+      <Image
+        source={{ uri: "https://i.postimg.cc/VNh8VWCf/Image.jpg" }}
+        style={styles.logoImage}
+        resizeMode="contain"
+      />
+    </View>
+  );
+
+  // Primary Button Component
+  const PrimaryButton = ({
+    title,
+    onPress,
+    disabled = false,
+  }: {
+    title: string;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.primaryButton,
+        {
+          backgroundColor: disabled
+            ? "#E5E7EB"
+            : pressed
+            ? "#009ACD"
+            : "#00BFFF",
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.primaryButtonText,
+          { color: disabled ? "#9CA3AF" : "#FFFFFF" },
+        ]}
+      >
+        {title}
+      </Text>
+    </Pressable>
+  );
 
   // ==================================================
   // PAGE 1 — NAME
@@ -77,54 +121,41 @@ export default function Index() {
   if (page === 1) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>What's your name?</Text>
 
-        <Text style={styles.title}>
-          What's your name?
-        </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="First Name"
+            placeholderTextColor="#9CA3AF"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          placeholderTextColor="#777"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Last Name"
+            placeholderTextColor="#9CA3AF"
+            value={lastName}
+            onChangeText={setLastName}
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Last Name"
-          placeholderTextColor="#777"
-          value={lastName}
-          onChangeText={setLastName}
-        />
+          <PrimaryButton
+            title="Continue"
+            disabled={!isPage1Valid}
+            onPress={() => setPage(2)}
+          />
 
-        <Pressable
-          style={styles.button}
-          onPress={() => setPage(2)}
-        >
-          <Text style={styles.buttonText}>
-            Continue
-          </Text>
-        </Pressable>
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already Have a SansCount?</Text>
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>
-            Already Have a SansCount?
-          </Text>
-
-          <Pressable
-            onPress={() => setPage(7)}
-          >
-            <Text style={styles.loginButton}>
-              Sign In
-            </Text>
-          </Pressable>
+            <TouchableOpacity onPress={() => setPage(7)}>
+              <Text style={styles.loginButton}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
       </View>
     );
   }
@@ -136,96 +167,68 @@ export default function Index() {
   if (page === 2) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>Birthdate</Text>
 
-        <Text style={styles.title}>
-          Birthdate
-        </Text>
+          <Text style={styles.subtitle}>
+            You must be at least 13 years old.
+          </Text>
 
-        <Text style={styles.subtitle}>
-          You must be at least 13 years old.
-        </Text>
+          <View style={styles.dateRow}>
+            <TouchableOpacity
+              style={styles.dateSelect}
+              onPress={() => setPicker("day")}
+            >
+              <Text style={styles.dateSelectText}>{day ?? "Day"}</Text>
+            </TouchableOpacity>
 
-        <View style={styles.dateRow}>
+            <TouchableOpacity
+              style={styles.dateSelect}
+              onPress={() => setPicker("month")}
+            >
+              <Text style={styles.dateSelectText}>{month ?? "Month"}</Text>
+            </TouchableOpacity>
 
-          <Pressable
-            style={styles.dateSelect}
-            onPress={() => setPicker("day")}
-          >
-            <Text style={styles.dateSelectText}>
-              {day ?? "Day"}
+            <TouchableOpacity
+              style={styles.dateSelectYear}
+              onPress={() => setPicker("year")}
+            >
+              <Text style={styles.dateSelectText}>{year ?? "Year"}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {age !== null && (
+            <Text style={[styles.ageText, !isOldEnough && styles.errorText]}>
+              Age: {age}
+              {!isOldEnough && " — Must be 13+"}
             </Text>
-          </Pressable>
+          )}
 
-          <Pressable
-            style={styles.dateSelect}
-            onPress={() => setPicker("month")}
+          <PrimaryButton
+            title="Continue"
+            disabled={!isOldEnough}
+            onPress={() => setPage(3)}
+          />
+
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setPage(1)}
           >
-            <Text style={styles.dateSelectText}>
-              {month ?? "Month"}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.dateSelectYear}
-            onPress={() => setPicker("year")}
-          >
-            <Text style={styles.dateSelectText}>
-              {year ?? "Year"}
-            </Text>
-          </Pressable>
-
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
         </View>
 
-        {age !== null && (
-          <Text
-            style={[
-              styles.ageText,
-              !isOldEnough && styles.errorText,
-            ]}
-          >
-            Age: {age}
-            {!isOldEnough && " — Must be 13+"}
-          </Text>
-        )}
-
-        <Pressable
-          style={[
-            styles.button,
-            !isOldEnough && styles.disabledButton,
-          ]}
-          disabled={!isOldEnough}
-          onPress={() => setPage(3)}
-        >
-          <Text style={styles.buttonText}>
-            Continue
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.backButton}
-          onPress={() => setPage(1)}
-        >
-          <Text style={styles.backText}>
-            Back
-          </Text>
-        </Pressable>
-
-        {/* DATE PICKER */}
-
+        {/* DATE PICKER MODAL */}
         <Modal
           visible={picker !== null}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setPicker(null)}
         >
           <View style={styles.modalBackground}>
-
             <View style={styles.modalBox}>
-
               <Text style={styles.modalTitle}>
                 Select{" "}
                 {picker === "day"
@@ -236,13 +239,9 @@ export default function Index() {
               </Text>
 
               <ScrollView style={styles.optionsList}>
-
                 {picker === "day" &&
-                  Array.from(
-                    { length: 31 },
-                    (_, i) => i + 1
-                  ).map((item) => (
-                    <Pressable
+                  Array.from({ length: 31 }, (_, i) => i + 1).map((item) => (
+                    <TouchableOpacity
                       key={item}
                       style={styles.option}
                       onPress={() => {
@@ -250,18 +249,13 @@ export default function Index() {
                         setPicker(null);
                       }}
                     >
-                      <Text style={styles.optionText}>
-                        {item}
-                      </Text>
-                    </Pressable>
+                      <Text style={styles.optionText}>{item}</Text>
+                    </TouchableOpacity>
                   ))}
 
                 {picker === "month" &&
-                  Array.from(
-                    { length: 12 },
-                    (_, i) => i + 1
-                  ).map((item) => (
-                    <Pressable
+                  Array.from({ length: 12 }, (_, i) => i + 1).map((item) => (
+                    <TouchableOpacity
                       key={item}
                       style={styles.option}
                       onPress={() => {
@@ -269,19 +263,16 @@ export default function Index() {
                         setPicker(null);
                       }}
                     >
-                      <Text style={styles.optionText}>
-                        {item}
-                      </Text>
-                    </Pressable>
+                      <Text style={styles.optionText}>{item}</Text>
+                    </TouchableOpacity>
                   ))}
 
                 {picker === "year" &&
                   Array.from(
                     { length: 100 },
-                    (_, i) =>
-                      new Date().getFullYear() - i
+                    (_, i) => new Date().getFullYear() - i
                   ).map((item) => (
-                    <Pressable
+                    <TouchableOpacity
                       key={item}
                       style={styles.option}
                       onPress={() => {
@@ -289,28 +280,20 @@ export default function Index() {
                         setPicker(null);
                       }}
                     >
-                      <Text style={styles.optionText}>
-                        {item}
-                      </Text>
-                    </Pressable>
+                      <Text style={styles.optionText}>{item}</Text>
+                    </TouchableOpacity>
                   ))}
-
               </ScrollView>
 
-              <Pressable
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setPicker(null)}
               >
-                <Text style={styles.closeText}>
-                  Cancel
-                </Text>
-              </Pressable>
-
+                <Text style={styles.closeText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-
           </View>
         </Modal>
-
       </View>
     );
   }
@@ -322,50 +305,37 @@ export default function Index() {
   if (page === 3) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>Create your username</Text>
 
-        <Text style={styles.title}>
-          Create your username
-        </Text>
+          <View style={styles.usernameBox}>
+            <TextInput
+              style={styles.usernameInput}
+              placeholder="Username"
+              placeholderTextColor="#9CA3AF"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
 
-        <View style={styles.usernameBox}>
+            <Text style={styles.domain}>@sanscounts.san</Text>
+          </View>
 
-          <TextInput
-            style={styles.usernameInput}
-            placeholder="Username"
-            placeholderTextColor="#777"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
+          <PrimaryButton
+            title="Continue"
+            disabled={!isPage3Valid}
+            onPress={() => setPage(4)}
           />
 
-          <Text style={styles.domain}>
-            @sanscounts.san
-          </Text>
-
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setPage(2)}
+          >
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
         </View>
-
-        <Pressable
-          style={styles.button}
-          onPress={() => setPage(4)}
-        >
-          <Text style={styles.buttonText}>
-            Continue
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.backButton}
-          onPress={() => setPage(2)}
-        >
-          <Text style={styles.backText}>
-            Back
-          </Text>
-        </Pressable>
-
       </View>
     );
   }
@@ -377,42 +347,33 @@ export default function Index() {
   if (page === 4) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>Create your Sassword</Text>
 
-        <Text style={styles.title}>
-          Create your Sassword
-        </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Sassword"
+            placeholderTextColor="#9CA3AF"
+            value={sassword}
+            onChangeText={setSassword}
+            secureTextEntry
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Sassword"
-          placeholderTextColor="#777"
-          value={sassword}
-          onChangeText={setSassword}
-          secureTextEntry
-        />
+          <PrimaryButton
+            title="Continue"
+            disabled={!isPage4Valid}
+            onPress={() => setPage(5)}
+          />
 
-        <Pressable
-          style={styles.button}
-          onPress={() => setPage(5)}
-        >
-          <Text style={styles.buttonText}>
-            Continue
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.backButton}
-          onPress={() => setPage(3)}
-        >
-          <Text style={styles.backText}>
-            Back
-          </Text>
-        </Pressable>
-
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setPage(3)}
+          >
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -424,68 +385,42 @@ export default function Index() {
   if (page === 5) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>Agreement</Text>
 
-        <Text style={styles.title}>
-          Agreement
-        </Text>
+          <Text style={styles.agreementText}>
+            Please review and agree to the SansCounts Terms & Conditions before
+            creating your account.
+          </Text>
 
-        <Text style={styles.agreementText}>
-          Please review and agree to the
-          SansCounts Terms & Conditions
-          before creating your account.
-        </Text>
-
-        <Pressable
-          style={styles.checkboxRow}
-          onPress={() => setAgreed(!agreed)}
-        >
-
-          <View
-            style={[
-              styles.checkbox,
-              agreed && styles.checkboxChecked,
-            ]}
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setAgreed(!agreed)}
           >
-            {agreed && (
-              <Text style={styles.checkmark}>
-                ✓
-              </Text>
-            )}
-          </View>
+            <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
+              {agreed && <Text style={styles.checkmark}>✓</Text>}
+            </View>
 
-          <Text style={styles.checkboxText}>
-            I agree to the SansCounts Terms &
-            Conditions
-          </Text>
+            <Text style={styles.checkboxText}>
+              I agree to the SansCounts Terms & Conditions
+            </Text>
+          </TouchableOpacity>
 
-        </Pressable>
+          <PrimaryButton
+            title="Create Account"
+            disabled={!agreed}
+            onPress={() => setPage(6)}
+          />
 
-        <Pressable
-          style={[
-            styles.button,
-            !agreed && styles.disabledButton,
-          ]}
-          disabled={!agreed}
-          onPress={() => setPage(6)}
-        >
-          <Text style={styles.buttonText}>
-            Create Account
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.backButton}
-          onPress={() => setPage(4)}
-        >
-          <Text style={styles.backText}>
-            Back
-          </Text>
-        </Pressable>
-
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setPage(4)}
+          >
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -497,49 +432,36 @@ export default function Index() {
   if (page === 6) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <View style={styles.successCircle}>
+            <Text style={styles.checkmarkLarge}>✓</Text>
+          </View>
 
-        <View style={styles.successCircle}>
-          <Text style={styles.checkmarkLarge}>
-            ✓
+          <LogoHeader />
+
+          <Text style={styles.successTitle}>Success!</Text>
+
+          <Text style={styles.successText}>
+            Your SansCounts account has been created successfully.
           </Text>
+
+          <Text style={styles.usernamePreview}>{username}@sanscounts.san</Text>
+
+          <PrimaryButton
+            title="Done"
+            onPress={() => {
+              setPage(1);
+              setFirstName("");
+              setLastName("");
+              setDay(null);
+              setMonth(null);
+              setYear(null);
+              setUsername("");
+              setSassword("");
+              setAgreed(false);
+            }}
+          />
         </View>
-
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
-
-        <Text style={styles.successTitle}>
-          Success!
-        </Text>
-
-        <Text style={styles.successText}>
-          Your SansCounts account has been
-          created successfully.
-        </Text>
-
-        <Text style={styles.usernamePreview}>
-          {username}@sanscounts.san
-        </Text>
-
-        <Pressable
-          style={styles.button}
-          onPress={() => {
-            setPage(1);
-            setFirstName("");
-            setLastName("");
-            setDay(null);
-            setMonth(null);
-            setYear(null);
-            setUsername("");
-            setSassword("");
-            setAgreed(false);
-          }}
-        >
-          <Text style={styles.buttonText}>
-            Done
-          </Text>
-        </Pressable>
-
       </View>
     );
   }
@@ -551,86 +473,47 @@ export default function Index() {
   if (page === 7) {
     return (
       <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <LogoHeader />
 
-        <Text style={styles.logo}>
-          SansCounts
-        </Text>
+          <Text style={styles.title}>Welcome Back</Text>
 
-        <Text style={styles.title}>
-          Welcome Back
-        </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            placeholderTextColor="#9CA3AF"
+            value={loginUsername}
+            onChangeText={setLoginUsername}
+            autoCapitalize="none"
+          />
 
-        {/* USERNAME */}
+          <TextInput
+            style={styles.input}
+            placeholder="Sansword"
+            placeholderTextColor="#9CA3AF"
+            value={loginSassword}
+            onChangeText={setLoginSassword}
+            secureTextEntry
+          />
 
-        <Text style={styles.fieldLabel}>
-          Username :
-        </Text>
+          <TouchableOpacity onPress={() => {}}>
+            <Text style={styles.sansgotText}>Sansnot Sassword?</Text>
+          </TouchableOpacity>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#777"
-          value={loginUsername}
-          onChangeText={setLoginUsername}
-          autoCapitalize="none"
-        />
+          <PrimaryButton
+            title="Sign In"
+            disabled={!isPage7Valid}
+            onPress={() => setPage(8)}
+          />
 
-        {/* SANSWORD */}
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Don't Have a SansCount?</Text>
 
-        <Text style={styles.fieldLabel}>
-          Sansword :
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Sansword"
-          placeholderTextColor="#777"
-          value={loginSassword}
-          onChangeText={setLoginSassword}
-          secureTextEntry
-        />
-
-        {/* SANS GOT SASSWORD */}
-
-        <Pressable
-          onPress={() => {
-            // Future: Sansword recovery system
-          }}
-        >
-          <Text style={styles.sansgotText}>
-            Sansnot Sassword?
-          </Text>
-        </Pressable>
-
-        {/* SIGN IN */}
-
-        <Pressable
-          style={styles.button}
-          onPress={() => setPage(8)}
-        >
-          <Text style={styles.buttonText}>
-            Sign In
-          </Text>
-        </Pressable>
-
-        {/* SIGN UP */}
-
-        <View style={styles.loginContainer}>
-
-          <Text style={styles.loginText}>
-            Don't Have a SansCount?
-          </Text>
-
-          <Pressable
-            onPress={() => setPage(1)}
-          >
-            <Text style={styles.loginButton}>
-              Sign Up
-            </Text>
-          </Pressable>
-
+            <TouchableOpacity onPress={() => setPage(1)}>
+              <Text style={styles.loginButton}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
       </View>
     );
   }
@@ -641,42 +524,28 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.formContainer}>
+        <View style={styles.successCircle}>
+          <Text style={styles.checkmarkLarge}>✓</Text>
+        </View>
 
-      <View style={styles.successCircle}>
-        <Text style={styles.checkmarkLarge}>
-          ✓
-        </Text>
+        <LogoHeader />
+
+        <Text style={styles.successTitle}>Welcome!</Text>
+
+        <Text style={styles.successText}>You have successfully signed in.</Text>
+
+        <Text style={styles.usernamePreview}>{loginUsername}</Text>
+
+        <PrimaryButton
+          title="Sign Out"
+          onPress={() => {
+            setPage(7);
+            setLoginUsername("");
+            setLoginSassword("");
+          }}
+        />
       </View>
-
-      <Text style={styles.logo}>
-        SansCounts
-      </Text>
-
-      <Text style={styles.successTitle}>
-        Welcome!
-      </Text>
-
-      <Text style={styles.successText}>
-        You have successfully signed in.
-      </Text>
-
-      <Text style={styles.usernamePreview}>
-        {loginUsername}
-      </Text>
-
-      <Pressable
-        style={styles.button}
-        onPress={() => {
-          setPage(7);
-          setLoginUsername("");
-          setLoginSassword("");
-        }}
-      >
-        <Text style={styles.buttonText}>
-          Sign Out
-        </Text>
-      </Pressable>
-
     </View>
   );
 }
@@ -688,71 +557,79 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
   },
 
-  logo: {
-    color: "#FFFFFF",
-    fontSize: 48,
-    fontWeight: "700",
+  formContainer: {
+    width: "100%",
+    maxWidth: 480,
+    alignItems: "center",
+  },
+
+  logoHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 40,
-    letterSpacing: -2,
+  },
+
+  logoImage: {
+    width: 60,
+    height: 60,
+    marginLeft: 12,
+  },
+
+  logoText: {
+    color: "#000000",
+    fontSize: 34,
+    fontWeight: "600",
+    letterSpacing: -0.5,
   },
 
   title: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "600",
+    color: "#000000",
+    fontSize: 32,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 25,
+    marginBottom: 32,
+    letterSpacing: -0.5,
   },
 
   subtitle: {
-    color: "#999999",
+    color: "#6B7280",
     fontSize: 16,
     textAlign: "center",
-    marginBottom: 25,
-  },
-
-  fieldLabel: {
-    width: "100%",
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 24,
   },
 
   input: {
     width: "100%",
-    height: 58,
-    backgroundColor: "#111111",
-    borderRadius: 14,
+    height: 56,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
     paddingHorizontal: 18,
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 18,
-    marginBottom: 18,
+    marginBottom: 20,
   },
 
-  button: {
-    width: "80%",
-    height: 55,
-    borderRadius: 28,
-    backgroundColor: "#FFFFFF",
+  primaryButton: {
+    width: "100%",
+    height: 56,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 15,
+    marginTop: 12,
+    overflow: "hidden",
   },
 
-  disabledButton: {
-    opacity: 0.35,
-  },
-
-  buttonText: {
-    color: "#000000",
-    fontSize: 17,
+  primaryButtonText: {
+    fontSize: 18,
     fontWeight: "700",
   },
 
@@ -760,170 +637,178 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 25,
+    marginTop: 32,
   },
 
   loginText: {
-    color: "#999999",
+    color: "#6B7280",
     fontSize: 15,
   },
 
   loginButton: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 15,
     fontWeight: "700",
-    marginLeft: 5,
+    marginLeft: 6,
   },
 
   sansgotText: {
-    color: "#FFFFFF",
+    color: "#6B7280",
     fontSize: 15,
-    fontWeight: "600",
-    marginTop: -5,
-    marginBottom: 5,
+    marginBottom: 16,
   },
 
   dateRow: {
     width: "100%",
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
     marginBottom: 20,
   },
 
   dateSelect: {
     flex: 1,
-    height: 58,
-    backgroundColor: "#111111",
-    borderRadius: 14,
+    height: 56,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
 
   dateSelectYear: {
-    flex: 1.3,
-    height: 58,
-    backgroundColor: "#111111",
-    borderRadius: 14,
+    flex: 1.2,
+    height: 56,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
 
   dateSelectText: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 16,
   },
 
   ageText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    marginBottom: 5,
+    color: "#6B7280",
+    fontSize: 16,
+    marginBottom: 12,
   },
 
   errorText: {
-    color: "#FF5555",
+    color: "#EF4444",
   },
 
   backButton: {
-    marginTop: 25,
+    marginTop: 20,
   },
 
   backText: {
-    color: "#FFFFFF",
+    color: "#6B7280",
     fontSize: 16,
   },
 
   usernameBox: {
     width: "100%",
-    height: 58,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
-    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
     paddingLeft: 18,
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   usernameInput: {
     flex: 1,
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 18,
   },
 
   domain: {
-    color: "#FFFFFF",
+    color: "#6B7280",
     fontSize: 15,
-    marginRight: 15,
+    marginRight: 16,
   },
 
   agreementText: {
-    color: "#AAAAAA",
+    color: "#6B7280",
     fontSize: 15,
     textAlign: "center",
-    lineHeight: 23,
-    marginBottom: 30,
+    lineHeight: 24,
+    marginBottom: 24,
   },
 
   checkboxRow: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
 
   checkbox: {
-    width: 26,
-    height: 26,
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
+    width: 22,
+    height: 22,
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
     borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-  },
-
-  checkboxChecked: {
     backgroundColor: "#FFFFFF",
   },
 
+  checkboxChecked: {
+    backgroundColor: "#00BFFF",
+    borderColor: "#00BFFF",
+  },
+
   checkmark: {
-    color: "#000000",
-    fontSize: 18,
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "700",
   },
 
   checkboxText: {
     flex: 1,
-    color: "#FFFFFF",
-    fontSize: 14,
-    lineHeight: 20,
+    color: "#6B7280",
+    fontSize: 15,
   },
-
-  // MODAL
 
   modalBackground: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
 
   modalBox: {
-    backgroundColor: "#111111",
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 25,
-    maxHeight: "70%",
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderRadius: 16,
+    padding: 24,
+    maxHeight: "65%",
   },
 
   modalTitle: {
-    color: "#FFFFFF",
-    fontSize: 22,
+    color: "#000000",
+    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 20,
   },
 
   optionsList: {
-    marginBottom: 10,
+    marginBottom: 16,
   },
 
   option: {
@@ -931,56 +816,54 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#222222",
+    borderBottomColor: "#E5E7EB",
   },
 
   optionText: {
-    color: "#FFFFFF",
-    fontSize: 18,
+    color: "#000000",
+    fontSize: 16,
   },
 
   closeButton: {
-    height: 50,
+    height: 48,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 25,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
   },
 
   closeText: {
     color: "#000000",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  // SUCCESS
-
-  successCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderColor: "#2196F3",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 25,
-  },
-
-  checkmarkLarge: {
-    color: "#2196F3",
-    fontSize: 40,
+    fontSize: 15,
     fontWeight: "600",
   },
 
+  successCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: "#00BFFF",
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+
+  checkmarkLarge: {
+    color: "#00BFFF",
+    fontSize: 28,
+  },
+
   successTitle: {
-    color: "#FFFFFF",
-    fontSize: 30,
+    color: "#000000",
+    fontSize: 28,
     fontWeight: "700",
-    marginBottom: 15,
+    marginBottom: 12,
   },
 
   successText: {
-    color: "#AAAAAA",
+    color: "#6B7280",
     fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
@@ -988,9 +871,9 @@ const styles = StyleSheet.create({
   },
 
   usernamePreview: {
-    color: "#FFFFFF",
-    fontSize: 17,
+    color: "#000000",
+    fontSize: 16,
     fontWeight: "600",
-    marginBottom: 15,
+    marginBottom: 24,
   },
 });
