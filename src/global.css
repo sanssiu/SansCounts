@@ -1,8 +1,3 @@
-:root {
-  color-scheme: light !important;
-}
-
-*, body, html, #root {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

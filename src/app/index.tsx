@@ -9,7 +9,6 @@ import React, { useState } from "react";
 import {
   Image,
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,7 +17,6 @@ import {
   View,
 } from "react-native";
 
-// Firebase Configuration and Initialization
 const firebaseConfig = {
   apiKey: "AIzaSyBooI_FFQMHYxzrqojJPAQMUt3_8iQFKY",
   authDomain: "sanscountsauth.firebaseapp.com",
@@ -132,13 +130,14 @@ export default function Index() {
     onPress: () => void;
     disabled?: boolean;
   }) => (
-    <Pressable
+    <TouchableOpacity
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      activeOpacity={0.8}
+      style={[
         styles.primaryButton,
         {
-          backgroundColor: disabled ? "#E5E7EB" : pressed ? "#009ACD" : "#00BFFF",
+          backgroundColor: disabled ? "#E5E7EB" : "#0099FF",
         },
       ]}
     >
@@ -150,7 +149,7 @@ export default function Index() {
       >
         {title}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
   );
 
   if (page === 1) {
@@ -318,7 +317,7 @@ export default function Index() {
           <Text style={styles.title}>Create your Sassword</Text>
           <TextInput
             style={styles.input}
-            placeholder="Sassword"
+            placeholder="Password"
             placeholderTextColor="#9CA3AF"
             value={sassword}
             onChangeText={setSassword}
@@ -408,7 +407,6 @@ export default function Index() {
       <View style={styles.container}>
         <View style={styles.formContainer}>
           <LogoHeader />
-          <Text style={styles.title}>Welcome Back</Text>
 
           <TextInput
             style={styles.input}
@@ -420,7 +418,7 @@ export default function Index() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Sansword"
+            placeholder="Password"
             placeholderTextColor="#9CA3AF"
             value={loginSassword}
             onChangeText={setLoginSassword}
@@ -428,7 +426,7 @@ export default function Index() {
           />
 
           <TouchableOpacity onPress={() => {}}>
-            <Text style={styles.sansgotText}>Sansnot Sassword?</Text>
+            <Text style={styles.sansgotText}>Forgot Sassword ?</Text>
           </TouchableOpacity>
 
           {loginError !== "" && (
@@ -438,14 +436,14 @@ export default function Index() {
           )}
 
           <PrimaryButton
-            title="Sign In"
+            title="Continue"
             disabled={!isPage7Valid}
             onPress={handleSignIn}
           />
           <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Don't Have a SansCount?</Text>
+            <Text style={styles.loginText}>Don't Have an Account?</Text>
             <TouchableOpacity onPress={() => { setPage(1); setLoginError(""); }}>
-              <Text style={styles.loginButton}>Sign Up</Text>
+              <Text style={styles.loginButton}>Sign UP</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -474,34 +472,63 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
-  formContainer: { width: "100%", maxWidth: 480, alignItems: "center" },
-  logoHeaderContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 40 },
-  logoImage: { width: 56, height: 56, marginLeft: 8 },
-  logoText: { color: "#000000", fontSize: 34, fontWeight: "600", letterSpacing: -0.5 },
-  title: { color: "#000000", fontSize: 32, fontWeight: "700", textAlign: "center", marginBottom: 32, letterSpacing: -0.5 },
+  formContainer: { width: "100%", maxWidth: 420, alignItems: "center" },
+  
+  logoHeaderContainer: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginBottom: 45,
+    width: "100%"
+  },
+  logoText: { color: "#000000", fontSize: 32, fontWeight: "700", letterSpacing: -0.5 },
+  logoImage: { width: 50, height: 38, marginLeft: 10 },
+
+  title: { color: "#000000", fontSize: 26, fontWeight: "700", textAlign: "center", marginBottom: 35, letterSpacing: -0.5 },
   subtitle: { color: "#6B7280", fontSize: 16, textAlign: "center", marginBottom: 24 },
-  input: { width: "100%", height: 56, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#D1D5DB", borderRadius: 12, paddingHorizontal: 18, color: "#000000", fontSize: 18, marginBottom: 20 },
-  primaryButton: { width: "100%", height: 56, borderRadius: 12, justifyContent: "center", alignItems: "center", marginTop: 12, overflow: "hidden" },
-  primaryButtonText: { fontSize: 18, fontWeight: "700" },
-  loginContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 32 },
+  
+  // আন্ডারলাইন রিমুভ করা হয়েছে এবং ব্যাকগ্রাউন্ড ক্লিন রাখা হয়েছে
+  input: { 
+    width: "100%", 
+    height: 48, 
+    backgroundColor: "transparent", 
+    borderBottomWidth: 0, 
+    borderRadius: 0, 
+    paddingHorizontal: 0, 
+    color: "#000000", 
+    fontSize: 17, 
+    marginBottom: 20 
+  },
+
+  primaryButton: { 
+    width: "100%", 
+    height: 50, 
+    borderRadius: 25, 
+    justifyContent: "center", 
+    alignItems: "center",
+    marginTop: 15,
+    backgroundColor: "#0099FF"
+  },
+  primaryButtonText: { fontSize: 17, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 },
+  loginContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 28 },
   loginText: { color: "#6B7280", fontSize: 15 },
-  loginButton: { color: "#000000", fontSize: 15, fontWeight: "700", marginLeft: 6 },
-  sansgotText: { color: "#6B7280", fontSize: 15, marginBottom: 16 },
+  loginButton: { color: "#0099FF", fontSize: 15, fontWeight: "700", marginLeft: 6 },
+  sansgotText: { color: "#000000", fontSize: 15, marginBottom: 24, fontWeight: "500", textAlign: "center" },
   dateRow: { width: "100%", flexDirection: "row", gap: 12, marginBottom: 20 },
-  dateSelect: { flex: 1, height: 56, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#D1D5DB", borderRadius: 12, justifyContent: "center", alignItems: "center" },
-  dateSelectYear: { flex: 1.2, height: 56, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#D1D5DB", borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  dateSelect: { flex: 1, height: 50, backgroundColor: "transparent", borderBottomWidth: 0, justifyContent: "center", alignItems: "center" },
+  dateSelectYear: { flex: 1.2, height: 50, backgroundColor: "transparent", borderBottomWidth: 0, justifyContent: "center", alignItems: "center" },
   dateSelectText: { color: "#000000", fontSize: 16 },
   ageText: { color: "#6B7280", fontSize: 16, marginBottom: 12 },
   errorText: { color: "#EF4444" },
   backButton: { marginTop: 20 },
   backText: { color: "#6B7280", fontSize: 16 },
-  usernameBox: { width: "100%", height: 56, flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#D1D5DB", borderRadius: 12, paddingLeft: 18, marginBottom: 20 },
+  usernameBox: { width: "100%", height: 50, flexDirection: "row", alignItems: "center", backgroundColor: "transparent", borderBottomWidth: 0, marginBottom: 24 },
   usernameInput: { flex: 1, color: "#000000", fontSize: 18 },
-  domain: { color: "#6B7280", fontSize: 15, marginRight: 16 },
+  domain: { color: "#6B7280", fontSize: 15, marginRight: 4 },
   agreementText: { color: "#6B7280", fontSize: 15, textAlign: "center", lineHeight: 24, marginBottom: 24 },
   checkboxRow: { width: "100%", flexDirection: "row", alignItems: "center", marginBottom: 24 },
-  checkbox: { width: 22, height: 22, borderWidth: 1.5, borderColor: "#D1D5DB", borderRadius: 6, justifyContent: "center", alignItems: "center", marginRight: 12, backgroundColor: "#FFFFFF" },
-  checkboxChecked: { backgroundColor: "#00BFFF", borderColor: "#00BFFF" },
+  checkbox: { width: 22, height: 22, borderWidth: 1.5, borderColor: "#000000", borderRadius: 6, justifyContent: "center", alignItems: "center", marginRight: 12, backgroundColor: "#FFFFFF" },
+  checkboxChecked: { backgroundColor: "#0099FF", borderColor: "#0099FF" },
   checkmark: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   checkboxText: { flex: 1, color: "#6B7280", fontSize: 15 },
   modalBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
@@ -512,8 +539,8 @@ const styles = StyleSheet.create({
   optionText: { color: "#000000", fontSize: 16 },
   closeButton: { height: 48, justifyContent: "center", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: 12 },
   closeText: { color: "#000000", fontSize: 15, fontWeight: "600" },
-  successCircle: { width: 60, height: 60, borderRadius: 30, borderWidth: 1.5, borderColor: "#00BFFF", backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center", marginBottom: 24 },
-  checkmarkLarge: { color: "#00BFFF", fontSize: 28 },
+  successCircle: { width: 60, height: 60, borderRadius: 30, borderWidth: 1.5, borderColor: "#0099FF", backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center", marginBottom: 24 },
+  checkmarkLarge: { color: "#0099FF", fontSize: 28 },
   successTitle: { color: "#000000", fontSize: 28, fontWeight: "700", marginBottom: 12 },
   successText: { color: "#6B7280", fontSize: 16, textAlign: "center", lineHeight: 24, marginBottom: 20 },
   usernamePreview: { color: "#000000", fontSize: 16, fontWeight: "600", marginBottom: 24 },
