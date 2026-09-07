@@ -23,11 +23,18 @@ const firebaseConfig = {
   projectId: "sanscountsauth",
   storageBucket: "sanscountsauth.firebasestorage.app",
   messagingSenderId: "1033970622393",
-  appId: "1:1033970622393:web:2c7ecb0df95a543d82e068"
+  appId: "1:1033970622393:web:2c7ecb0df95a543d82e068",
+  measurementId: "G-CMGH8JS3D"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// মাসের নামগুলোর লিস্ট
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
 
 export default function Index() {
   const [page, setPage] = useState(1);
@@ -36,7 +43,7 @@ export default function Index() {
   const [lastName, setLastName] = useState("");
 
   const [day, setDay] = useState<number | null>(null);
-  const [month, setMonth] = useState<number | null>(null);
+  const [month, setMonth] = useState<string | null>(null);
   const [year, setYear] = useState<number | null>(null);
 
   const [picker, setPicker] = useState<"day" | "month" | "year" | null>(null);
@@ -58,10 +65,11 @@ export default function Index() {
 
   const calculateAge = () => {
     if (day === null || month === null || year === null) return null;
+    const monthIndex = MONTH_NAMES.indexOf(month) + 1;
     const today = new Date();
     let calculatedAge = today.getFullYear() - year;
     const currentMonth = today.getMonth() + 1;
-    if (currentMonth < month || (currentMonth === month && today.getDate() < day)) {
+    if (currentMonth < monthIndex || (currentMonth === monthIndex && today.getDate() < day)) {
       calculatedAge--;
     }
     return calculatedAge;
@@ -243,7 +251,7 @@ export default function Index() {
                     </TouchableOpacity>
                   ))}
                 {picker === "month" &&
-                  Array.from({ length: 12 }, (_, i) => i + 1).map((item) => (
+                  MONTH_NAMES.map((item) => (
                     <TouchableOpacity
                       key={item}
                       style={styles.option}
@@ -317,7 +325,7 @@ export default function Index() {
           <Text style={styles.title}>Create your Sassword</Text>
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder="Sassword"
             placeholderTextColor="#9CA3AF"
             value={sassword}
             onChangeText={setSassword}
@@ -408,17 +416,21 @@ export default function Index() {
         <View style={styles.formContainer}>
           <LogoHeader />
 
+          <View style={styles.usernameBox}>
+            <TextInput
+              style={styles.usernameInput}
+              placeholder="Username"
+              placeholderTextColor="#9CA3AF"
+              value={loginUsername}
+              onChangeText={setLoginUsername}
+              autoCapitalize="none"
+            />
+            <Text style={styles.domain}>@sanscounts.san</Text>
+          </View>
+
           <TextInput
             style={styles.input}
-            placeholder="Username"
-            placeholderTextColor="#9CA3AF"
-            value={loginUsername}
-            onChangeText={setLoginUsername}
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
+            placeholder="Sassword"
             placeholderTextColor="#9CA3AF"
             value={loginSassword}
             onChangeText={setLoginSassword}
@@ -487,14 +499,14 @@ const styles = StyleSheet.create({
   title: { color: "#000000", fontSize: 26, fontWeight: "700", textAlign: "center", marginBottom: 35, letterSpacing: -0.5 },
   subtitle: { color: "#6B7280", fontSize: 16, textAlign: "center", marginBottom: 24 },
   
-  // আন্ডারলাইন রিমুভ করা হয়েছে এবং ব্যাকগ্রাউন্ড ক্লিন রাখা হয়েছে
   input: { 
     width: "100%", 
-    height: 48, 
-    backgroundColor: "transparent", 
-    borderBottomWidth: 0, 
-    borderRadius: 0, 
-    paddingHorizontal: 0, 
+    height: 52, 
+    backgroundColor: "#FAFAFA", 
+    borderWidth: 1.5, 
+    borderColor: "#D1D5DB", 
+    borderRadius: 12, 
+    paddingHorizontal: 16, 
     color: "#000000", 
     fontSize: 17, 
     marginBottom: 20 
@@ -522,9 +534,22 @@ const styles = StyleSheet.create({
   errorText: { color: "#EF4444" },
   backButton: { marginTop: 20 },
   backText: { color: "#6B7280", fontSize: 16 },
-  usernameBox: { width: "100%", height: 50, flexDirection: "row", alignItems: "center", backgroundColor: "transparent", borderBottomWidth: 0, marginBottom: 24 },
-  usernameInput: { flex: 1, color: "#000000", fontSize: 18 },
+  
+  usernameBox: { 
+    width: "100%", 
+    height: 52, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "#FAFAFA", 
+    borderWidth: 1.5, 
+    borderColor: "#D1D5DB", 
+    borderRadius: 12, 
+    paddingHorizontal: 16, 
+    marginBottom: 20 
+  },
+  usernameInput: { flex: 1, color: "#000000", fontSize: 17 },
   domain: { color: "#6B7280", fontSize: 15, marginRight: 4 },
+  
   agreementText: { color: "#6B7280", fontSize: 15, textAlign: "center", lineHeight: 24, marginBottom: 24 },
   checkboxRow: { width: "100%", flexDirection: "row", alignItems: "center", marginBottom: 24 },
   checkbox: { width: 22, height: 22, borderWidth: 1.5, borderColor: "#000000", borderRadius: 6, justifyContent: "center", alignItems: "center", marginRight: 12, backgroundColor: "#FFFFFF" },
