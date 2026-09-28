@@ -1,11 +1,4 @@
-import { initializeApp } from "firebase/app";
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut
-} from "firebase/auth";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Image,
   Modal,
@@ -16,19 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBooI_FFQMHYxzrqojJPAQMUt3_8iQFKY",
-  authDomain: "sanscountsauth.firebaseapp.com",
-  projectId: "sanscountsauth",
-  storageBucket: "sanscountsauth.firebasestorage.app",
-  messagingSenderId: "1033970622393",
-  appId: "1:1033970622393:web:2c7ecb0df95a543d82e068",
-  measurementId: "G-CMGH8JS3D"
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 
 // মাসের নামগুলোর লিস্ট
 const MONTH_NAMES = [
@@ -78,44 +58,59 @@ export default function Index() {
   const age = calculateAge();
   const isOldEnough = age !== null && age >= 13;
 
+  // মাইএসকিউএল ব্যাকএنڈের মাধ্যমে সাইন আপ হ্যান্ডেল করার ফাংশন
   const handleSignUp = async () => {
     try {
       setSignUpError("");
-      const email = `${username.trim().toLowerCase()}@sanscounts.san`;
-      await createUserWithEmailAndPassword(auth, email, sassword);
-      setPage(6);
+      const response = await fetch("http://localhost:5000/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          username: username.trim().toLowerCase(),
+          password: sassword,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPage(6);
+      } else {
+        setSignUpError(data.message || "Error during sign-up");
+      }
     } catch (error: any) {
-      setSignUpError("Error during sign-up: " + error.message);
+      setSignUpError("Backend connection error during sign-up");
     }
   };
 
+  // মাইএসকিউএল ব্যাকএন্ডের মাধ্যমে সাইন ইন হ্যান্ডেল করার ফাংশন
   const handleSignIn = async () => {
     try {
       setLoginError("");
-      const email = `${loginUsername.trim().toLowerCase()}@sanscounts.san`;
-      await signInWithEmailAndPassword(auth, email, loginSassword);
-      setPage(8);
-    } catch (error: any) {
-      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
-        setLoginError("Sanscount doesn't exist!");
-      } else if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-        setLoginError("Wrong Sassword!");
+      const response = await fetch("http://localhost:5000/api/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: loginUsername.trim().toLowerCase(),
+          password: loginSassword,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPage(8);
       } else {
-        setLoginError("Sanscount doesn't exist!");
+        setLoginError(data.message || "Sanscount doesn't exist!");
       }
+    } catch (error: any) {
+      setLoginError("Sanscount doesn't exist!");
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      setPage(7);
-      setLoginUsername("");
-      setLoginSassword("");
-      setLoginError("");
-    } catch (error: any) {
-      alert("Error signing out");
-    }
+  const handleSignOut = () => {
+    setPage(7);
+    setLoginUsername("");
+    setLoginSassword("");
+    setLoginError("");
   };
 
   const LogoHeader = () => (

@@ -1,24 +1,40 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const mysql = require('mysql2');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
-console.log('Connecting to MongoDB...');
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected Successfully'))
-  .catch((err) => console.error('MongoDB Connection Error:', err));
-
-app.get('/', (req, res) => {
-  res.send('SansCounts API is running...');
+// মাইএসকিউএল ডাটাবেজ কানেকশন
+const db = mysql.createConnection({
+  host: 'brtlg4exutshwgqmiirt-mysql.services.clever-cloud.com',
+  user: 'brtlg4exutshwgqmiirt-mysql.services.clever-cloud.com',      
+  password: 'S6rOxv51mLqUfwkmC7xX', 
+  database: 'sanscounts'   
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+db.connect((err) => {
+  if (err) {
+    console.error('MySQL connection error:', err);
+    return;
+  }
+  console.log('Connected to MySQL Database!');
+});
+
+// সাইন-আপ রাউট
+app.post('/api/signup', (req, res) => {
+  const { firstName, lastName, username, password } = req.body;
+  const query = 'INSERT INTO users (first_name, last_name, username, password) VALUES (?, ?, ?, ?)';
+
+  db.query(query, [firstName, lastName, username, password], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error saving user to MySQL' });
+    }
+    res.status(200).json({ message: 'User registered successfully' });
+  });
+});
+
+app.listen(5000, () => {
+  console.log('Server running on port 5000');
 });

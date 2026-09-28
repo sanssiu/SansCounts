@@ -3,5 +3,66 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "brtlg4exutshwgqmiirt",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "sans",
+      "group": "sans",
+      "database": "brtlg4exutshwgqmiirt",
+      "username": "utb2xw1clxaeh4ip"
+    },
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "brtlg4exutshwgqmiirt",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "s",
+      "group": "s",
+      "database": "brtlg4exutshwgqmiirt",
+      "username": "utb2xw1clxaeh4ip"
+    },
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "brtlg4exutshwgqmiirt",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "sanscounts",
+      "group": "sanscounts",
+      "database": "brtlg4exutshwgqmiirt",
+      "username": "utb2xw1clxaeh4ip"
+    },
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "brtlg4exutshwgqmiirt-mysql.services.clever-cloud.com",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "sanscounts db",
+      "username": "utb2xw1clxaeh4ip",
+      "database": "brtlg4exutshwgqmiirt"
+    }
+  ]
 }
