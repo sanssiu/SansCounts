@@ -2,7 +2,7 @@
   "name": "sanscounts",
   "version": "1.0.0",
   "type": "module",
-  "main": "server.ts",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node server.ts",
