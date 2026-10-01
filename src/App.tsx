@@ -85,7 +85,7 @@ export default function App() {
 
   // SansMail state
   const [mails, setMails] = useState<MailRecord[]>([]);
-  const [mailTab, setMailTab] = useState<"inbox" | "sent" | "compose">("inbox");
+  const [mailTab, setMailTab] = useState<"inbox" | "sent" | "compose" | "developer">("inbox");
   const [selectedMail, setSelectedMail] = useState<MailRecord | null>(null);
 
   const [mailTo, setMailTo] = useState("");
@@ -95,6 +95,42 @@ export default function App() {
   const [mailSuccess, setMailSuccess] = useState("");
   const [isSendingMail, setIsSendingMail] = useState(false);
   const [isFetchingMails, setIsFetchingMails] = useState(false);
+
+  // Developer Apps management state
+  const [developerApps, setDeveloperApps] = useState<any[]>([]);
+  const [isFetchingApps, setIsFetchingApps] = useState(false);
+  
+  // App registration wizard state
+  const [showDevModal, setShowDevModal] = useState(false);
+  const [devAppName, setDevAppName] = useState("");
+  const [devRedirectUri, setDevRedirectUri] = useState("");
+  const [devDomain, setDevDomain] = useState("");
+  
+  // Checkout simulation state
+  const [devStep, setDevStep] = useState<"details" | "payment" | "success">("details");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCVC, setCardCVC] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [generatedApp, setGeneratedApp] = useState<any>(null);
+
+  const fetchDeveloperApps = async () => {
+    setIsFetchingApps(true);
+    try {
+      const activeUser = successUsername || "siam";
+      const res = await fetch(getApiUrl("/api/oauth/apps"));
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        // Show apps owned by active user or mock apps
+        setDeveloperApps(data.filter((a: any) => a.owner === activeUser || a.owner === `${activeUser}@gmail.com` || a.owner === 'sanscounts@gmail.com'));
+      }
+    } catch (e) {
+      console.warn("Error fetching developer apps:", e);
+    } finally {
+      setIsFetchingApps(false);
+    }
+  };
 
   const fetchAdminUsers = async () => {
     try {
@@ -146,6 +182,7 @@ export default function App() {
   useEffect(() => {
     if (successUsername) {
       fetchMails();
+      fetchDeveloperApps();
     }
   }, [successUsername]);
 
@@ -1321,6 +1358,31 @@ export default function App() {
                       <span style={{ fontSize: '14px' }}>📝</span>
                       <span>Compose Mail</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setMailTab("developer"); setSelectedMail(null); fetchDeveloperApps(); }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: mailTab === "developer" ? '#E0F2FE' : 'transparent',
+                        color: mailTab === "developer" ? '#0369A1' : '#475569',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: mailTab === "developer" ? 700 : 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px' }}>🛠️</span>
+                      <span>Developer Portal</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1651,6 +1713,394 @@ export default function App() {
                           {isSendingMail ? "Sending Email..." : "⚡ Send SansMail"}
                         </button>
                       </form>
+                    )}
+
+                    {/* 5. Developer Portal */}
+                    {mailTab === "developer" && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                          <div>
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', display: 'block' }}>
+                              🛠️ SansCounts Auth Developer Portal
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#64748B' }}>
+                              Secure, seamless 1-click login for your Web / App
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDevAppName("");
+                              setDevRedirectUri("");
+                              setDevDomain("");
+                              setDevStep("details");
+                              setCardNumber("");
+                              setCardExpiry("");
+                              setCardCVC("");
+                              setPaymentError("");
+                              setGeneratedApp(null);
+                              setShowDevModal(true);
+                            }}
+                            style={{
+                              backgroundColor: '#0099FF',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              padding: '8px 14px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              boxShadow: '0 3px 8px rgba(0, 153, 255, 0.25)',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            + Register Web/App ($2.99)
+                          </button>
+                        </div>
+
+                        {/* License pricing banner */}
+                        <div style={{
+                          backgroundColor: '#EFF6FF',
+                          border: '1.5px solid #BFDBFE',
+                          borderRadius: '12px',
+                          padding: '14px 16px',
+                          marginBottom: '20px',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}>
+                          <span style={{ fontSize: '24px' }}>💎</span>
+                          <div>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E40AF', display: 'block' }}>
+                              One-Time Developer License Fee
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#1E3A8A', lineHeight: '18px', display: 'block' }}>
+                              Deploy SansCounts Auth on your custom domain for only <b>$2.99 (one-time payment)</b>. Includes unlimited users, high-speed secure token exchange, and OAuth 2.0 UserInfo API!
+                            </span>
+                          </div>
+                        </div>
+
+                        {isFetchingApps ? (
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+                            <span style={{ color: '#6B7280', fontSize: '13px' }}>Loading registered domains...</span>
+                          </div>
+                        ) : developerApps.length === 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '220px', border: '1.5px dashed #E2E8F0', borderRadius: '16px', padding: '24px' }}>
+                            <span style={{ fontSize: '32px', marginBottom: '10px' }}>🌐</span>
+                            <span style={{ color: '#0F172A', fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>No registered Web/App domains yet</span>
+                            <span style={{ color: '#64748B', fontSize: '12px', textAlign: 'center', maxWidth: '300px', marginBottom: '16px' }}>
+                              Buy a $2.99 lifetime auth license for your website domain to get your Client ID & Client Secret instantly.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDevAppName("");
+                                setDevRedirectUri("");
+                                setDevDomain("");
+                                setDevStep("details");
+                                setShowDevModal(true);
+                              }}
+                              style={{
+                                backgroundColor: '#0099FF',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                padding: '10px 18px',
+                                borderRadius: '25px',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                              }}
+                            >
+                              Register Web/App Now
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '350px', overflowY: 'auto' }}>
+                            {developerApps.map((app: any) => (
+                              <div
+                                key={app.clientId}
+                                style={{
+                                  backgroundColor: '#FFFFFF',
+                                  border: '1.5px solid #F1F5F9',
+                                  borderRadius: '12px',
+                                  padding: '16px',
+                                  boxSizing: 'border-box',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                  <div>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', display: 'block' }}>
+                                      {app.appName}
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#10B981', display: 'inline-block' }}></span>
+                                      Active License — Paid $2.99
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: '11px', color: '#64748B' }}>
+                                    {new Date(app.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '12px', border: '1px solid #E2E8F0' }}>
+                                  <div>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Callback URL (Redirect URI):</span>
+                                    <code style={{ fontSize: '11px', color: '#0F172A', wordBreak: 'break-all' }}>{app.redirectUri}</code>
+                                  </div>
+                                  <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }}></div>
+                                  <div>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client ID:</span>
+                                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                                      <code style={{ fontSize: '11px', color: '#0099FF', fontWeight: 700, wordBreak: 'break-all', flex: 1 }}>{app.clientId}</code>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(app.clientId);
+                                          alert("Client ID copied!");
+                                        }}
+                                        style={{ backgroundColor: '#E0F2FE', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', color: '#0369A1', cursor: 'pointer', fontWeight: 700 }}
+                                      >
+                                        Copy
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }}></div>
+                                  <div>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client Secret:</span>
+                                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                                      <code style={{ fontSize: '11px', color: '#64748B', wordBreak: 'break-all', flex: 1 }}>{app.clientSecret}</code>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(app.clientSecret);
+                                          alert("Client Secret copied!");
+                                        }}
+                                        style={{ backgroundColor: '#E0F2FE', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', color: '#0369A1', cursor: 'pointer', fontWeight: 700 }}
+                                      >
+                                        Copy
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* App Registration Modal */}
+                        {showDevModal && (
+                          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', zIndex: 100 }}>
+                            <div style={{ width: '100%', maxWidth: '440px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #E2E8F0', padding: '24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                              
+                              {/* Step indicator */}
+                              <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0099FF' }}>
+                                  {devStep === "details" ? "Step 1: Domain Setup" : devStep === "payment" ? "Step 2: Pay $2.99" : "Step 3: Keys Generated!"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowDevModal(false)}
+                                  style={{ background: 'none', border: 'none', fontSize: '18px', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+
+                              {/* STEP 1: Details */}
+                              {devStep === "details" && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '8px', margin: '0 0 8px 0' }}>Register New Domain</h3>
+                                  <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '20px', margin: '0 0 20px 0' }}>Provide your App Name and Redirect Callback URL to get secure authentication keys.</p>
+                                  
+                                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>APP NAME</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. My Awesome App"
+                                    value={devAppName}
+                                    onChange={(e) => setDevAppName(e.target.value)}
+                                    style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                                  />
+
+                                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>APP DOMAIN</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. app.mywebsite.com"
+                                    value={devDomain}
+                                    onChange={(e) => setDevDomain(e.target.value)}
+                                    style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                                  />
+
+                                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>REDIRECT CALLBACK URI</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. https://app.mywebsite.com/auth/callback"
+                                    value={devRedirectUri}
+                                    onChange={(e) => setDevRedirectUri(e.target.value)}
+                                    style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', marginBottom: '20px', boxSizing: 'border-box' }}
+                                  />
+
+                                  <button
+                                    type="button"
+                                    disabled={!devAppName.trim() || !devRedirectUri.trim() || !devDomain.trim()}
+                                    onClick={() => setDevStep("payment")}
+                                    style={{
+                                      width: '100%',
+                                      height: '46px',
+                                      backgroundColor: (!devAppName.trim() || !devRedirectUri.trim() || !devDomain.trim()) ? '#E2E8F0' : '#0099FF',
+                                      color: (!devAppName.trim() || !devRedirectUri.trim() || !devDomain.trim()) ? '#94A3B8' : '#FFFFFF',
+                                      border: 'none',
+                                      borderRadius: '23px',
+                                      fontSize: '14px',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                                    }}
+                                  >
+                                    Proceed to License Payment ($2.99)
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* STEP 2: Payment */}
+                              {devStep === "payment" && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px', margin: '0 0 4px 0' }}>Lifetime Developer License</h3>
+                                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', marginBottom: '16px', display: 'block' }}>$2.99 <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>one-time fee</span></span>
+                                  
+                                  <div style={{ backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '12px', border: '1px solid #E2E8F0', marginBottom: '20px' }}>
+                                    <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}><b>App Name:</b> {devAppName}</span>
+                                    <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginTop: '2px' }}><b>Domain:</b> {devDomain}</span>
+                                  </div>
+
+                                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>CREDIT OR DEBIT CARD</label>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                                    <input
+                                      type="text"
+                                      placeholder="1234 5678 9876 5432"
+                                      maxLength={19}
+                                      value={cardNumber}
+                                      onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim())}
+                                      style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                                      <input
+                                        type="text"
+                                        placeholder="MM / YY"
+                                        maxLength={5}
+                                        value={cardExpiry}
+                                        onChange={(e) => setCardExpiry(e.target.value)}
+                                        style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                      />
+                                      <input
+                                        type="password"
+                                        placeholder="CVC"
+                                        maxLength={3}
+                                        value={cardCVC}
+                                        onChange={(e) => setCardCVC(e.target.value.replace(/\D/g, ''))}
+                                        style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {paymentError && (
+                                    <p style={{ color: '#EF4444', fontSize: '12px', fontWeight: 600, marginBottom: '12px', margin: '0 0 12px 0' }}>{paymentError}</p>
+                                  )}
+
+                                  <div style={{ display: 'flex', flexDirection: 'row', gap: '12px' }}>
+                                    <button
+                                      type="button"
+                                      disabled={isProcessingPayment}
+                                      onClick={() => setDevStep("details")}
+                                      style={{ flex: 1, height: '46px', backgroundColor: '#F1F5F9', color: '#475569', border: 'none', borderRadius: '23px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                      Back
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isProcessingPayment || !cardNumber || !cardExpiry || !cardCVC}
+                                      onClick={async () => {
+                                        setIsProcessingPayment(true);
+                                        setPaymentError("");
+                                        try {
+                                          // Simulate checkout verification
+                                          await new Promise((r) => setTimeout(r, 1400));
+                                          
+                                          const res = await fetch(getApiUrl("/api/oauth/register-app"), {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                              appName: devAppName,
+                                              redirectUri: devRedirectUri,
+                                              owner: successUsername || "siam"
+                                            })
+                                          });
+                                          const data = await res.json();
+                                          if (res.ok) {
+                                            setGeneratedApp(data);
+                                            setDevStep("success");
+                                            fetchDeveloperApps();
+                                          } else {
+                                            setPaymentError(data.message || "Error finalizing app registration");
+                                          }
+                                        } catch (e) {
+                                          setPaymentError("Payment connection error. Please try again.");
+                                        } finally {
+                                          setIsProcessingPayment(false);
+                                        }
+                                      }}
+                                      style={{
+                                        flex: 2,
+                                        height: '46px',
+                                        backgroundColor: '#0099FF',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        borderRadius: '23px',
+                                        fontSize: '13px',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                                      }}
+                                    >
+                                      {isProcessingPayment ? "Verifying Payment..." : "Pay $2.99 & Register"}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* STEP 3: Success and keys */}
+                              {devStep === "success" && generatedApp && (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                                  <div style={{ width: '48px', height: '48px', borderRadius: '24px', backgroundColor: '#D1FAE5', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '14px' }}>
+                                    <span style={{ color: '#10B981', fontSize: '20px', fontWeight: 700 }}>✓</span>
+                                  </div>
+                                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px', margin: '0 0 4px 0' }}>License Purchased!</h3>
+                                  <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px', margin: '0 0 16px 0' }}>Secure keys generated successfully for domain <b>{devDomain}</b>.</p>
+
+                                  <div style={{ width: '100%', textAlign: 'left', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', marginBottom: '20px', boxSizing: 'border-box' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client ID:</span>
+                                    <code style={{ fontSize: '11px', color: '#0099FF', fontWeight: 700, wordBreak: 'break-all', display: 'block', marginBottom: '10px' }}>{generatedApp.clientId}</code>
+                                    
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client Secret:</span>
+                                    <code style={{ fontSize: '11px', color: '#64748B', wordBreak: 'break-all', display: 'block' }}>{generatedApp.clientSecret}</code>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDevModal(false)}
+                                    style={{ width: '100%', height: '44px', backgroundColor: '#0099FF', color: '#FFFFFF', border: 'none', borderRadius: '22px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    Done
+                                  </button>
+                                </div>
+                              )}
+
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </>
                 )}
