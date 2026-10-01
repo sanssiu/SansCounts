@@ -23,6 +23,7 @@ export default function App() {
 
   const [loginUsername, setLoginUsername] = useState("");
   const [loginSassword, setLoginSassword] = useState("");
+  const [loginStep, setLoginStep] = useState<1 | 2>(1);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -33,7 +34,8 @@ export default function App() {
   const isPage1Valid = firstName.trim() !== "" && lastName.trim() !== "";
   const isPage3Valid = username.trim() !== "";
   const isPage4Valid = sassword.trim() !== "";
-  const isPage7Valid = loginUsername.trim() !== "" && loginSassword.trim() !== "";
+  const isLoginUsernameValid = loginUsername.trim() !== "";
+  const isLoginSasswordValid = loginSassword.trim() !== "";
 
   const calculateAge = () => {
     if (day === null || month === null || year === null) return null;
@@ -75,6 +77,27 @@ export default function App() {
     }
   };
 
+  const handleCheckUsername = async () => {
+    try {
+      setLoginError("");
+      const response = await fetch("/api/check-username", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: loginUsername.trim().toLowerCase(),
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setLoginStep(2);
+      } else {
+        setLoginError(data.message || "Sanscount doesn't exist!");
+      }
+    } catch (error: any) {
+      setLoginError("Sanscount doesn't exist!");
+    }
+  };
+
   const handleSignIn = async () => {
     try {
       setLoginError("");
@@ -100,6 +123,7 @@ export default function App() {
 
   const handleSignOut = () => {
     setPage(7);
+    setLoginStep(1);
     setLoginUsername("");
     setLoginSassword("");
     setLoginError("");
@@ -214,7 +238,7 @@ export default function App() {
               <span style={{ color: '#6B7280', fontSize: '15px' }}>Already Have a SansCount?</span>
               <button
                 type="button"
-                onClick={() => { setPage(7); setLoginError(""); }}
+                onClick={() => { setPage(7); setLoginStep(1); setLoginError(""); }}
                 style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Sign In
@@ -617,10 +641,12 @@ export default function App() {
           </div>
         )}
 
-        {page === 7 && (
+        {page === 7 && loginStep === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
+              Sign In
+            </h1>
             <div style={{
               width: '100%',
               height: '52px',
@@ -652,6 +678,41 @@ export default function App() {
               />
               <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
             </div>
+
+            {loginError !== "" && (
+              <p style={{ color: '#EF4444', marginBottom: '16px', textAlign: 'center', fontWeight: 600, fontSize: '15px', margin: '0 0 16px 0' }}>
+                {loginError}
+              </p>
+            )}
+
+            <PrimaryButton
+              title="Continue"
+              disabled={!isLoginUsernameValid}
+              onPress={handleCheckUsername}
+            />
+
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
+              <span style={{ color: '#6B7280', fontSize: '15px' }}>Don't Have an Account?</span>
+              <button
+                type="button"
+                onClick={() => { setPage(1); setLoginError(""); }}
+                style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Sign UP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {page === 7 && loginStep === 2 && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <LogoHeader />
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.5px', margin: '0 0 10px 0' }}>
+              Enter Sassword
+            </h1>
+            <p style={{ color: '#6B7280', fontSize: '15px', marginBottom: '35px', margin: '0 0 35px 0' }}>
+              {loginUsername}@sanscounts.san
+            </p>
 
             <input
               type="password"
@@ -686,21 +747,18 @@ export default function App() {
             )}
 
             <PrimaryButton
-              title="Continue"
-              disabled={!isPage7Valid}
+              title="Sign In"
+              disabled={!isLoginSasswordValid}
               onPress={handleSignIn}
             />
 
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
-              <span style={{ color: '#6B7280', fontSize: '15px' }}>Don't Have an Account?</span>
-              <button
-                type="button"
-                onClick={() => { setPage(1); setLoginError(""); }}
-                style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Sign UP
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => { setLoginStep(1); setLoginSassword(""); setLoginError(""); }}
+              style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
+            >
+              Back
+            </button>
           </div>
         )}
 

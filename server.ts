@@ -103,6 +103,38 @@ async function startServer() {
     }
   });
 
+  app.post('/api/check-username', async (req, res) => {
+    try {
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      const cleanUsername = username.trim().toLowerCase();
+
+      if (mysqlPool) {
+        mysqlPool.query(
+          'SELECT * FROM users WHERE username = ?',
+          [cleanUsername],
+          (err: any, results: any[]) => {
+            if (err || !results || results.length === 0) {
+              if (!memoryUsers.has(cleanUsername)) {
+                return res.status(404).json({ message: "Sanscount doesn't exist!" });
+              }
+            }
+            return res.json({ exists: true });
+          }
+        );
+      } else {
+        if (!memoryUsers.has(cleanUsername)) {
+          return res.status(404).json({ message: "Sanscount doesn't exist!" });
+        }
+        return res.json({ exists: true });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: "Sanscount doesn't exist!" });
+    }
+  });
+
   app.post('/api/signin', async (req, res) => {
     try {
       const { username, password } = req.body;
