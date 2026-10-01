@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1790858737128,
+    "firstName": "Sans",
+    "lastName": "Counts",
+    "username": "sans",
+    "password": "$2b$10$672ywfuwO7hv0mDY1avbzu9fOF7SuMTg8bKkranfbHheNOmBt9jSe",
+    "createdAt": "2026-10-01T12:45:37.128Z"
+  },
+  {
+    "id": 1790861155526,
+    "firstName": "Audit",
+    "lastName": "Test",
+    "username": "auditor",
+    "password": "$2b$10$gIjzG5Buu8e.bE8bOXGb2e26mQlba0wL7.C99Rnh44rbmp/1ryXQ2",
+    "createdAt": "2026-10-01T13:25:55.526Z"
+  }
+]

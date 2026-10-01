@@ -1,0 +1,13 @@
+[
+  {
+    "clientId": "sc_client_sansneat_live",
+    "clientSecret": "sc_sec_sansneat_82f1b702e9a1c4",
+    "appName": "SansNeat",
+    "redirectUri": "https://sansneat.sanssiu.com/auth/callback",
+    "allowedOrigins": [
+      "https://sansneat.sanssiu.com"
+    ],
+    "owner": "sanscounts@gmail.com",
+    "createdAt": "2026-10-01T12:00:00.000Z"
+  }
+]
