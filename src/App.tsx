@@ -1968,14 +1968,14 @@ export default function App() {
                                   </div>
                                   <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }}></div>
                                   <div>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client Secret:</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>SAuth Key (Client Secret):</span>
                                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                                       <code style={{ fontSize: '11px', color: '#64748B', wordBreak: 'break-all', flex: 1 }}>{app.clientSecret}</code>
                                       <button
                                         type="button"
                                         onClick={() => {
                                           navigator.clipboard.writeText(app.clientSecret);
-                                          alert("Client Secret copied!");
+                                          alert("SAuth Key copied!");
                                         }}
                                         style={{ backgroundColor: '#E0F2FE', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', color: '#0369A1', cursor: 'pointer', fontWeight: 700 }}
                                       >
@@ -2182,7 +2182,7 @@ export default function App() {
                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client ID:</span>
                                     <code style={{ fontSize: '11px', color: '#0099FF', fontWeight: 700, wordBreak: 'break-all', display: 'block', marginBottom: '10px' }}>{generatedApp.clientId}</code>
                                     
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Client Secret:</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>SAuth Key (Client Secret):</span>
                                     <code style={{ fontSize: '11px', color: '#64748B', wordBreak: 'break-all', display: 'block' }}>{generatedApp.clientSecret}</code>
                                   </div>
 

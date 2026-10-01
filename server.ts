@@ -620,8 +620,8 @@ async function startServer() {
     if (!appName || !redirectUri) {
       return res.status(400).json({ message: 'App Name and Redirect URI are required' });
     }
-    const clientId = 'sc_client_' + crypto.randomBytes(8).toString('hex');
-    const clientSecret = 'sc_sec_' + crypto.randomBytes(16).toString('hex');
+    const clientId = 'SD_' + crypto.randomBytes(8).toString('hex');
+    const clientSecret = 'SAuth_' + crypto.randomBytes(16).toString('hex');
 
     const newApp: DeveloperAppRecord = {
       clientId,
