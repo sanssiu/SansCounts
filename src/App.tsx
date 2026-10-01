@@ -49,6 +49,19 @@ export default function App() {
   const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isOauthFlow = params ? (params.get('client_id') !== null || params.get('redirect_uri') !== null) : false;
 
+  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isDevDomain = currentHost.includes('sanssiu.com') && !currentHost.includes('sanscounts');
+  const isDeveloperOnlyRoute = isDevDomain || (params ? params.get('dev') === 'true' : false);
+
+  const [showPublicShop, setShowPublicShop] = useState(false);
+
+  useEffect(() => {
+    if (isDeveloperOnlyRoute) {
+      setPage(7);
+      setMailTab("developer");
+    }
+  }, [isDeveloperOnlyRoute]);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
@@ -545,7 +558,83 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: page === 8 ? '720px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: page === 8 ? '720px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* PUBLIC SANSCOUNTS AUTH SHOP MODAL */}
+        {showPublicShop && (
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', zIndex: 100 }}>
+            <div style={{ width: '100%', maxWidth: '440px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #E2E8F0', padding: '28px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPublicShop(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '20px', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ width: '56px', height: '56px', borderRadius: '28px', backgroundColor: '#E0F2FE', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto' }}>
+                <span style={{ fontSize: '26px' }}>🛠️</span>
+              </div>
+
+              <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', marginBottom: '8px', margin: '0 0 8px 0' }}>SansCounts Auth Shop</h2>
+              <p style={{ fontSize: '13px', color: '#64748B', lineHeight: '18px', marginBottom: '24px', margin: '0 0 24px 0' }}>
+                Integrate secure 1-click <b>Sign in with SansCounts</b> into your own website or application domain!
+              </p>
+
+              {/* Feature grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ color: '#0099FF', fontWeight: 'bold' }}>✓</span>
+                  <span style={{ fontSize: '12px', color: '#334155' }}><b>$2.99 One-Time Fee:</b> Lifetime access per domain. No monthly fees.</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ color: '#0099FF', fontWeight: 'bold' }}>✓</span>
+                  <span style={{ fontSize: '12px', color: '#334155' }}><b>OAuth 2.0 Compliant:</b> Secure Client ID & Client Secret key exchange.</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ color: '#0099FF', fontWeight: 'bold' }}>✓</span>
+                  <span style={{ fontSize: '12px', color: '#334155' }}><b>Profile API:</b> Fetch verified user firstName, lastName, and username!</span>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#EFF6FF', borderRadius: '12px', padding: '14px', border: '1.5px solid #BFDBFE', marginBottom: '24px' }}>
+                <span style={{ fontSize: '12px', color: '#1E40AF', display: 'block', fontWeight: 600 }}>Get Started Instantly</span>
+                <span style={{ fontSize: '11px', color: '#1E3A8A', display: 'block', marginTop: '4px', lineHeight: '16px' }}>
+                  Create or log into a SansCounts account, go to the <b>Developer Portal</b> tab, and purchase your license with credit card or mobile wallet in 10 seconds!
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPublicShop(false);
+                  setPage(7); // Redirect to sign in page
+                  setLoginStep(1);
+                  setLoginError("");
+                  // Alert them to make it super clear
+                  alert("Please Sign In (or Create an Account) first. Once logged in, click 'Developer Portal' in the sidebar to buy your license!");
+                }}
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  backgroundColor: '#0099FF',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '24px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                }}
+              >
+                Sign In to Buy Developer License
+              </button>
+            </div>
+          </div>
+        )}
+
         {page === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
@@ -1060,9 +1149,15 @@ export default function App() {
         {page === 7 && loginStep === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
-              Sign In
+            <h1 style={{ color: '#000000', fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>
+              {isDeveloperOnlyRoute ? "Developer Sign In" : "Sign In"}
             </h1>
+            {isDeveloperOnlyRoute && (
+              <p style={{ color: '#64748B', fontSize: '13px', textAlign: 'center', marginBottom: '28px', maxWidth: '340px', margin: '0 auto 28px auto', lineHeight: '18px' }}>
+                Manage your OAuth keys, domains, and buy lifetime developer licenses. <b>(Developers Only)</b>
+              </p>
+            )}
+            {!isDeveloperOnlyRoute && <div style={{ height: '24px' }}></div>}
             <div style={{
               width: '100%',
               height: '52px',
@@ -1109,13 +1204,13 @@ export default function App() {
 
             {!isOauthFlow && (
               <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
-                <span style={{ color: '#6B7280', fontSize: '15px' }}>Don't Have an Account?</span>
+                <span style={{ color: '#6B7280', fontSize: '15px' }}>{isDeveloperOnlyRoute ? "Need a developer account?" : "Don't Have an Account?"}</span>
                 <button
                   type="button"
                   onClick={() => { setPage(1); setLoginError(""); }}
                   style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                  Sign UP
+                  {isDeveloperOnlyRoute ? "Register Now" : "Sign UP"}
                 </button>
               </div>
             )}
@@ -1278,86 +1373,90 @@ export default function App() {
 
                   {/* MENU OPTIONS (knit options) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <button
-                      type="button"
-                      onClick={() => { setMailTab("inbox"); setSelectedMail(null); }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#E0F2FE' : 'transparent',
-                        color: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#475569',
-                        border: 'none',
-                        fontSize: '13px',
-                        fontWeight: (mailTab === "inbox" && !selectedMail) ? 700 : 600,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.15s',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px' }}>📥</span>
-                      <span style={{ flex: 1 }}>Inbox</span>
-                      <span style={{ fontSize: '11px', backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "inbox" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
-                        {inboxMails.length}
-                      </span>
-                    </button>
+                    {!isDeveloperOnlyRoute && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setMailTab("inbox"); setSelectedMail(null); }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#E0F2FE' : 'transparent',
+                            color: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#475569',
+                            border: 'none',
+                            fontSize: '13px',
+                            fontWeight: (mailTab === "inbox" && !selectedMail) ? 700 : 600,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.15s',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <span style={{ fontSize: '14px' }}>📥</span>
+                          <span style={{ flex: 1 }}>Inbox</span>
+                          <span style={{ fontSize: '11px', backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "inbox" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
+                            {inboxMails.length}
+                          </span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => { setMailTab("sent"); setSelectedMail(null); }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        backgroundColor: (mailTab === "sent" && !selectedMail) ? '#E0F2FE' : 'transparent',
-                        color: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#475569',
-                        border: 'none',
-                        fontSize: '13px',
-                        fontWeight: (mailTab === "sent" && !selectedMail) ? 700 : 600,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.15s',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px' }}>📤</span>
-                      <span style={{ flex: 1 }}>Sent Messages</span>
-                      <span style={{ fontSize: '11px', backgroundColor: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "sent" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
-                        {sentMails.length}
-                      </span>
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() => { setMailTab("sent"); setSelectedMail(null); }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            backgroundColor: (mailTab === "sent" && !selectedMail) ? '#E0F2FE' : 'transparent',
+                            color: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#475569',
+                            border: 'none',
+                            fontSize: '13px',
+                            fontWeight: (mailTab === "sent" && !selectedMail) ? 700 : 600,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.15s',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <span style={{ fontSize: '14px' }}>📤</span>
+                          <span style={{ flex: 1 }}>Sent Messages</span>
+                          <span style={{ fontSize: '11px', backgroundColor: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "sent" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
+                            {sentMails.length}
+                          </span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => { setMailTab("compose"); setSelectedMail(null); }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        backgroundColor: mailTab === "compose" ? '#F1F5F9' : 'transparent',
-                        color: mailTab === "compose" ? '#0F172A' : '#475569',
-                        border: 'none',
-                        fontSize: '13px',
-                        fontWeight: mailTab === "compose" ? 700 : 600,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.15s',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px' }}>📝</span>
-                      <span>Compose Mail</span>
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() => { setMailTab("compose"); setSelectedMail(null); }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            backgroundColor: mailTab === "compose" ? '#F1F5F9' : 'transparent',
+                            color: mailTab === "compose" ? '#0F172A' : '#475569',
+                            border: 'none',
+                            fontSize: '13px',
+                            fontWeight: mailTab === "compose" ? 700 : 600,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.15s',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <span style={{ fontSize: '14px' }}>📝</span>
+                          <span>Compose Mail</span>
+                        </button>
+                      </>
+                    )}
 
                     <button
                       type="button"
