@@ -104,12 +104,15 @@ export default function App() {
   };
 
   const LogoHeader = () => (
-    <div className="flex flex-row items-center justify-center mb-[45px] w-full">
-      <span className="text-[#000000] text-[32px] font-bold tracking-[-0.5px]">SansCounts</span>
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: '45px', width: '100%' }}>
+      <span style={{ color: '#000000', fontSize: '32px', fontWeight: 700, letterSpacing: '-0.5px' }}>SansCounts</span>
       <img
-        src="https://i.postimg.cc/VNh8VWCf/Image.jpg"
+        src="https://i.postimg.cc/2LCNWvH7/Image.jpg"
         alt="SansCounts Logo"
-        className="w-[50px] h-[38px] ml-[10px] object-contain"
+        style={{ width: '42px', height: '42px', objectFit: 'contain', marginLeft: '10px' }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = '/logo.jpg';
+        }}
       />
     </div>
   );
@@ -128,22 +131,34 @@ export default function App() {
       disabled={disabled}
       onClick={onPress}
       style={{
-        backgroundColor: disabled ? "#E5E7EB" : "#0099FF",
-        color: disabled ? "#9CA3AF" : "#FFFFFF",
+        width: '100%',
+        height: '50px',
+        borderRadius: '25px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: '15px',
+        backgroundColor: disabled ? '#E5E7EB' : '#0099FF',
+        color: disabled ? '#9CA3AF' : '#FFFFFF',
+        fontSize: '17px',
+        fontWeight: 700,
+        letterSpacing: '0.3px',
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        boxShadow: disabled ? 'none' : '0 4px 12px rgba(0, 153, 255, 0.25)'
       }}
-      className="w-full h-[50px] rounded-[25px] flex justify-center items-center mt-[15px] font-bold text-[17px] tracking-[0.3px] transition-colors cursor-pointer"
     >
       {title}
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex justify-center items-center px-[24px]">
-      <div className="w-full max-w-[420px] flex flex-col items-center">
+    <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
+      <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {page === 1 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[26px] font-bold text-center mb-[35px] tracking-[-0.5px]">
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
               What's your name?
             </h1>
             <input
@@ -151,26 +166,50 @@ export default function App() {
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full h-[52px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] text-[#000000] text-[17px] mb-[20px] focus:outline-none focus:border-[#0099FF]"
+              style={{
+                width: '100%',
+                height: '52px',
+                backgroundColor: '#FAFAFA',
+                border: '1.5px solid #D1D5DB',
+                borderRadius: '12px',
+                padding: '0 16px',
+                color: '#000000',
+                fontSize: '17px',
+                marginBottom: '20px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
             <input
               type="text"
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full h-[52px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] text-[#000000] text-[17px] mb-[20px] focus:outline-none focus:border-[#0099FF]"
+              style={{
+                width: '100%',
+                height: '52px',
+                backgroundColor: '#FAFAFA',
+                border: '1.5px solid #D1D5DB',
+                borderRadius: '12px',
+                padding: '0 16px',
+                color: '#000000',
+                fontSize: '17px',
+                marginBottom: '20px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
             <PrimaryButton
               title="Continue"
               disabled={!isPage1Valid}
               onPress={() => setPage(2)}
             />
-            <div className="flex flex-row items-center justify-center mt-[28px]">
-              <span className="text-[#6B7280] text-[15px]">Already Have a SansCount?</span>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
+              <span style={{ color: '#6B7280', fontSize: '15px' }}>Already Have a SansCount?</span>
               <button
                 type="button"
                 onClick={() => { setPage(7); setLoginError(""); }}
-                className="text-[#0099FF] text-[15px] font-bold ml-[6px] hover:underline cursor-pointer"
+                style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Sign In
               </button>
@@ -179,39 +218,75 @@ export default function App() {
         )}
 
         {page === 2 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[26px] font-bold text-center mb-[10px] tracking-[-0.5px]">
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.5px', margin: '0 0 10px 0' }}>
               Birthdate
             </h1>
-            <p className="text-[#6B7280] text-[16px] text-center mb-[24px]">
+            <p style={{ color: '#6B7280', fontSize: '16px', textAlign: 'center', marginBottom: '24px', margin: '0 0 24px 0' }}>
               You must be at least 13 years old.
             </p>
-            <div className="w-full flex flex-row gap-[12px] mb-[20px]">
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'row', gap: '12px', marginBottom: '20px' }}>
               <button
                 type="button"
                 onClick={() => setPicker("day")}
-                className="flex-1 h-[50px] flex justify-center items-center text-[#000000] text-[16px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] cursor-pointer"
+                style={{
+                  flex: 1,
+                  height: '50px',
+                  backgroundColor: '#FAFAFA',
+                  border: '1.5px solid #D1D5DB',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: '#000000',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
               >
                 {day ?? "Day"}
               </button>
               <button
                 type="button"
                 onClick={() => setPicker("month")}
-                className="flex-1 h-[50px] flex justify-center items-center text-[#000000] text-[16px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] cursor-pointer"
+                style={{
+                  flex: 1,
+                  height: '50px',
+                  backgroundColor: '#FAFAFA',
+                  border: '1.5px solid #D1D5DB',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: '#000000',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
               >
                 {month ?? "Month"}
               </button>
               <button
                 type="button"
                 onClick={() => setPicker("year")}
-                className="flex-[1.2] h-[50px] flex justify-center items-center text-[#000000] text-[16px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] cursor-pointer"
+                style={{
+                  flex: 1.2,
+                  height: '50px',
+                  backgroundColor: '#FAFAFA',
+                  border: '1.5px solid #D1D5DB',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: '#000000',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
               >
                 {year ?? "Year"}
               </button>
             </div>
             {age !== null && (
-              <p className={`text-[16px] mb-[12px] ${!isOldEnough ? "text-[#EF4444]" : "text-[#6B7280]"}`}>
+              <p style={{ fontSize: '16px', marginBottom: '12px', color: !isOldEnough ? '#EF4444' : '#6B7280', margin: '0 0 12px 0' }}>
                 Age: {age} {!isOldEnough && " — Must be 13+"}
               </p>
             )}
@@ -223,18 +298,18 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPage(1)}
-              className="mt-[20px] bg-transparent border-0 text-[#6B7280] text-[16px] hover:underline cursor-pointer"
+              style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
             >
               Back
             </button>
 
             {picker !== null && (
-              <div className="fixed inset-0 bg-black/50 flex justify-center items-center px-[20px] z-50">
-                <div className="w-full max-w-[420px] bg-[#FFFFFF] border-[1.5px] border-[#D1D5DB] rounded-[16px] p-[24px] max-h-[65%] flex flex-col shadow-2xl">
-                  <h3 className="text-[#000000] text-[20px] font-bold text-center mb-[20px]">
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', zIndex: 50 }}>
+                <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#FFFFFF', border: '1.5px solid #D1D5DB', borderRadius: '16px', padding: '24px', maxHeight: '65%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                  <h3 style={{ color: '#000000', fontSize: '20px', fontWeight: 700, textAlign: 'center', marginBottom: '20px', margin: '0 0 20px 0' }}>
                     Select {picker === "day" ? "Day" : picker === "month" ? "Month" : "Year"}
                   </h3>
-                  <div className="overflow-y-auto mb-[16px] flex-1">
+                  <div style={{ overflowY: 'auto', marginBottom: '16px', flex: 1 }}>
                     {picker === "day" &&
                       Array.from({ length: 31 }, (_, i) => i + 1).map((item) => (
                         <button
@@ -244,7 +319,21 @@ export default function App() {
                             setDay(item);
                             setPicker(null);
                           }}
-                          className="w-full h-[50px] flex justify-center items-center border-b border-[#E5E7EB] text-[#000000] text-[16px] hover:bg-[#F3F4F6] cursor-pointer bg-transparent"
+                          style={{
+                            width: '100%',
+                            height: '50px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderBottom: '1px solid #E5E7EB',
+                            color: '#000000',
+                            fontSize: '16px',
+                            backgroundColor: 'transparent',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            cursor: 'pointer'
+                          }}
                         >
                           {item}
                         </button>
@@ -258,7 +347,21 @@ export default function App() {
                             setMonth(item);
                             setPicker(null);
                           }}
-                          className="w-full h-[50px] flex justify-center items-center border-b border-[#E5E7EB] text-[#000000] text-[16px] hover:bg-[#F3F4F6] cursor-pointer bg-transparent"
+                          style={{
+                            width: '100%',
+                            height: '50px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderBottom: '1px solid #E5E7EB',
+                            color: '#000000',
+                            fontSize: '16px',
+                            backgroundColor: 'transparent',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            cursor: 'pointer'
+                          }}
                         >
                           {item}
                         </button>
@@ -272,7 +375,21 @@ export default function App() {
                             setYear(item);
                             setPicker(null);
                           }}
-                          className="w-full h-[50px] flex justify-center items-center border-b border-[#E5E7EB] text-[#000000] text-[16px] hover:bg-[#F3F4F6] cursor-pointer bg-transparent"
+                          style={{
+                            width: '100%',
+                            height: '50px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderBottom: '1px solid #E5E7EB',
+                            color: '#000000',
+                            fontSize: '16px',
+                            backgroundColor: 'transparent',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            cursor: 'pointer'
+                          }}
                         >
                           {item}
                         </button>
@@ -281,7 +398,17 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setPicker(null)}
-                    className="w-full h-[48px] bg-[#F3F4F6] rounded-[12px] text-[#000000] text-[15px] font-semibold hover:bg-gray-200 cursor-pointer border-0"
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      backgroundColor: '#F3F4F6',
+                      borderRadius: '12px',
+                      color: '#000000',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
                   >
                     Cancel
                   </button>
@@ -292,20 +419,39 @@ export default function App() {
         )}
 
         {page === 3 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[26px] font-bold text-center mb-[35px] tracking-[-0.5px]">
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
               Create your username
             </h1>
-            <div className="w-full h-[52px] flex flex-row items-center bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] mb-[20px] focus-within:border-[#0099FF]">
+            <div style={{
+              width: '100%',
+              height: '52px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#FAFAFA',
+              border: '1.5px solid #D1D5DB',
+              borderRadius: '12px',
+              padding: '0 16px',
+              marginBottom: '20px',
+              boxSizing: 'border-box'
+            }}>
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="flex-1 bg-transparent text-[#000000] text-[17px] focus:outline-none"
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#000000',
+                  fontSize: '17px',
+                  outline: 'none'
+                }}
               />
-              <span className="text-[#6B7280] text-[15px] mr-[4px]">@sanscounts.san</span>
+              <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
             </div>
             <PrimaryButton
               title="Continue"
@@ -315,7 +461,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPage(2)}
-              className="mt-[20px] bg-transparent border-0 text-[#6B7280] text-[16px] hover:underline cursor-pointer"
+              style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
             >
               Back
             </button>
@@ -323,9 +469,9 @@ export default function App() {
         )}
 
         {page === 4 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[26px] font-bold text-center mb-[35px] tracking-[-0.5px]">
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
               Create your Sassword
             </h1>
             <input
@@ -333,7 +479,19 @@ export default function App() {
               placeholder="Sassword"
               value={sassword}
               onChange={(e) => setSassword(e.target.value)}
-              className="w-full h-[52px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] text-[#000000] text-[17px] mb-[20px] focus:outline-none focus:border-[#0099FF]"
+              style={{
+                width: '100%',
+                height: '52px',
+                backgroundColor: '#FAFAFA',
+                border: '1.5px solid #D1D5DB',
+                borderRadius: '12px',
+                padding: '0 16px',
+                color: '#000000',
+                fontSize: '17px',
+                marginBottom: '20px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
             <PrimaryButton
               title="Continue"
@@ -343,7 +501,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPage(3)}
-              className="mt-[20px] bg-transparent border-0 text-[#6B7280] text-[16px] hover:underline cursor-pointer"
+              style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
             >
               Back
             </button>
@@ -351,17 +509,17 @@ export default function App() {
         )}
 
         {page === 5 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[26px] font-bold text-center mb-[35px] tracking-[-0.5px]">
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
               Agreement
             </h1>
-            <p className="text-[#6B7280] text-[15px] text-center leading-[24px] mb-[24px]">
+            <p style={{ color: '#6B7280', fontSize: '15px', textAlign: 'center', lineHeight: '24px', marginBottom: '24px', margin: '0 0 24px 0' }}>
               Please review and agree to the SansCounts Terms & Conditions before creating your account.
             </p>
 
             {signUpError !== "" && (
-              <p className="text-[#EF4444] mb-[16px] text-center font-semibold text-[15px]">
+              <p style={{ color: '#EF4444', marginBottom: '16px', textAlign: 'center', fontWeight: 600, fontSize: '15px', margin: '0 0 16px 0' }}>
                 {signUpError}
               </p>
             )}
@@ -369,18 +527,37 @@ export default function App() {
             <button
               type="button"
               onClick={() => setAgreed(!agreed)}
-              className="w-full flex flex-row items-center mb-[24px] text-left cursor-pointer bg-transparent border-0 p-0"
+              style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: '24px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                background: 'none',
+                border: 'none',
+                padding: 0
+              }}
             >
               <div
                 style={{
-                  backgroundColor: agreed ? "#0099FF" : "#FFFFFF",
-                  borderColor: agreed ? "#0099FF" : "#000000",
+                  width: '22px',
+                  height: '22px',
+                  border: '1.5px solid',
+                  borderColor: agreed ? '#0099FF' : '#000000',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: '12px',
+                  backgroundColor: agreed ? '#0099FF' : '#FFFFFF',
+                  transition: 'background-color 0.2s'
                 }}
-                className="w-[22px] h-[22px] border-[1.5px] rounded-[6px] flex justify-center items-center mr-[12px] transition-colors"
               >
-                {agreed && <span className="text-[#FFFFFF] text-[14px] font-bold">✓</span>}
+                {agreed && <span style={{ color: '#FFFFFF', fontSize: '14px', fontWeight: 700 }}>✓</span>}
               </div>
-              <span className="flex-1 text-[#6B7280] text-[15px]">
+              <span style={{ flex: 1, color: '#6B7280', fontSize: '15px' }}>
                 I agree to the SansCounts Terms & Conditions
               </span>
             </button>
@@ -392,7 +569,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPage(4)}
-              className="mt-[20px] bg-transparent border-0 text-[#6B7280] text-[16px] hover:underline cursor-pointer"
+              style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
             >
               Back
             </button>
@@ -400,16 +577,16 @@ export default function App() {
         )}
 
         {page === 6 && (
-          <div className="w-full flex flex-col items-center">
-            <div className="w-[60px] h-[60px] rounded-[30px] border-[1.5px] border-[#0099FF] bg-[#F3F4F6] flex justify-center items-center mb-[24px]">
-              <span className="text-[#0099FF] text-[28px] font-bold">✓</span>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '30px', border: '1.5px solid #0099FF', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
+              <span style={{ color: '#0099FF', fontSize: '28px', fontWeight: 700 }}>✓</span>
             </div>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[28px] font-bold mb-[12px] tracking-[-0.5px]">Success!</h1>
-            <p className="text-[#6B7280] text-[16px] text-center leading-[24px] mb-[20px]">
+            <h1 style={{ color: '#000000', fontSize: '28px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.5px', margin: '0 0 12px 0' }}>Success!</h1>
+            <p style={{ color: '#6B7280', fontSize: '16px', textAlign: 'center', lineHeight: '24px', marginBottom: '20px', margin: '0 0 20px 0' }}>
               Your SansCounts account has been created successfully.
             </p>
-            <p className="text-[#000000] text-[16px] font-semibold mb-[24px]">
+            <p style={{ color: '#000000', fontSize: '16px', fontWeight: 600, marginBottom: '24px', margin: '0 0 24px 0' }}>
               {successUsername}@sanscounts.san
             </p>
             <PrimaryButton
@@ -431,18 +608,37 @@ export default function App() {
         )}
 
         {page === 7 && (
-          <div className="w-full flex flex-col items-center">
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
 
-            <div className="w-full h-[52px] flex flex-row items-center bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] mb-[20px] focus-within:border-[#0099FF]">
+            <div style={{
+              width: '100%',
+              height: '52px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#FAFAFA',
+              border: '1.5px solid #D1D5DB',
+              borderRadius: '12px',
+              padding: '0 16px',
+              marginBottom: '20px',
+              boxSizing: 'border-box'
+            }}>
               <input
                 type="text"
                 placeholder="Username"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
-                className="flex-1 bg-transparent text-[#000000] text-[17px] focus:outline-none"
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#000000',
+                  fontSize: '17px',
+                  outline: 'none'
+                }}
               />
-              <span className="text-[#6B7280] text-[15px] mr-[4px]">@sanscounts.san</span>
+              <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
             </div>
 
             <input
@@ -450,15 +646,27 @@ export default function App() {
               placeholder="Sassword"
               value={loginSassword}
               onChange={(e) => setLoginSassword(e.target.value)}
-              className="w-full h-[52px] bg-[#FAFAFA] border-[1.5px] border-[#D1D5DB] rounded-[12px] px-[16px] text-[#000000] text-[17px] mb-[15px] focus:outline-none focus:border-[#0099FF]"
+              style={{
+                width: '100%',
+                height: '52px',
+                backgroundColor: '#FAFAFA',
+                border: '1.5px solid #D1D5DB',
+                borderRadius: '12px',
+                padding: '0 16px',
+                color: '#000000',
+                fontSize: '17px',
+                marginBottom: '15px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
 
-            <button type="button" className="text-[#000000] text-[15px] font-medium mb-[24px] hover:underline bg-transparent border-0 cursor-pointer">
+            <button type="button" style={{ color: '#000000', fontSize: '15px', fontWeight: 500, marginBottom: '24px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               Forgot Sassword ?
             </button>
 
             {loginError !== "" && (
-              <p className="text-[#EF4444] mb-[16px] text-center font-semibold text-[15px]">
+              <p style={{ color: '#EF4444', marginBottom: '16px', textAlign: 'center', fontWeight: 600, fontSize: '15px', margin: '0 0 16px 0' }}>
                 {loginError}
               </p>
             )}
@@ -469,12 +677,12 @@ export default function App() {
               onPress={handleSignIn}
             />
 
-            <div className="flex flex-row items-center justify-center mt-[28px]">
-              <span className="text-[#6B7280] text-[15px]">Don't Have an Account?</span>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
+              <span style={{ color: '#6B7280', fontSize: '15px' }}>Don't Have an Account?</span>
               <button
                 type="button"
                 onClick={() => { setPage(1); setLoginError(""); }}
-                className="text-[#0099FF] text-[15px] font-bold ml-[6px] hover:underline cursor-pointer"
+                style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Sign UP
               </button>
@@ -483,16 +691,16 @@ export default function App() {
         )}
 
         {page === 8 && (
-          <div className="w-full flex flex-col items-center">
-            <div className="w-[60px] h-[60px] rounded-[30px] border-[1.5px] border-[#0099FF] bg-[#F3F4F6] flex justify-center items-center mb-[24px]">
-              <span className="text-[#0099FF] text-[28px] font-bold">✓</span>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '30px', border: '1.5px solid #0099FF', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
+              <span style={{ color: '#0099FF', fontSize: '28px', fontWeight: 700 }}>✓</span>
             </div>
             <LogoHeader />
-            <h1 className="text-[#000000] text-[28px] font-bold mb-[12px] tracking-[-0.5px]">Welcome!</h1>
-            <p className="text-[#6B7280] text-[16px] text-center leading-[24px] mb-[20px]">
+            <h1 style={{ color: '#000000', fontSize: '28px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.5px', margin: '0 0 12px 0' }}>Welcome!</h1>
+            <p style={{ color: '#6B7280', fontSize: '16px', textAlign: 'center', lineHeight: '24px', marginBottom: '20px', margin: '0 0 20px 0' }}>
               You have successfully signed in.
             </p>
-            <p className="text-[#000000] text-[16px] font-semibold mb-[24px]">
+            <p style={{ color: '#000000', fontSize: '16px', fontWeight: 600, marginBottom: '24px', margin: '0 0 24px 0' }}>
               {successUsername}@sanscounts.san
             </p>
             <PrimaryButton
