@@ -14,5 +14,21 @@
     "username": "auditor",
     "password": "$2b$10$gIjzG5Buu8e.bE8bOXGb2e26mQlba0wL7.C99Rnh44rbmp/1ryXQ2",
     "createdAt": "2026-10-01T13:25:55.526Z"
+  },
+  {
+    "id": 1790861500000,
+    "firstName": "Siam",
+    "lastName": "Bin",
+    "username": "siam",
+    "password": "$2b$10$EnBPlSdVwKWLulrKm03/vuavNxsaqEQGVBGRG6NU1GMimN10zCaMG",
+    "createdAt": "2026-10-01T10:00:00.000Z"
+  },
+  {
+    "id": 1790862099934,
+    "firstName": "s",
+    "lastName": "s",
+    "username": "san",
+    "password": "$2b$10$BfTkcbxyb.P3xzjWlqfcwe3KMx8o22JBRmC2W.TkovmzxvWC9rDMa",
+    "createdAt": "2026-10-01T13:41:39.934Z"
   }
 ]

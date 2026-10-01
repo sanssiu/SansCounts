@@ -14,12 +14,21 @@ const normalizeUsername = (val: string) => {
     .replace(/@.*$/i, '');
 };
 
-interface AppRecord {
-  clientId: string;
-  clientSecret: string;
-  appName: string;
-  redirectUri: string;
-  owner: string;
+interface MailRecord {
+  id: number;
+  sender: string;
+  recipient: string;
+  subject: string;
+  body: string;
+  created_at: string;
+}
+
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
   createdAt: string;
 }
 
@@ -36,12 +45,20 @@ export default function App() {
   const [picker, setPicker] = useState<"day" | "month" | "year" | null>(null);
 
   const [username, setUsername] = useState("");
+  const [usernameAvailabilityError, setUsernameAvailabilityError] = useState("");
+  const [isCheckingUsernameAvail, setIsCheckingUsernameAvail] = useState(false);
+
   const [sassword, setSassword] = useState("");
+  const [showSassword, setShowSassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const [loginUsername, setLoginUsername] = useState("");
+  const [isCheckingLoginUsername, setIsCheckingLoginUsername] = useState(false);
   const [loginSassword, setLoginSassword] = useState("");
+  const [showLoginSassword, setShowLoginSassword] = useState(false);
   const [loginStep, setLoginStep] = useState<1 | 2>(1);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -49,71 +66,74 @@ export default function App() {
   const [signUpError, setSignUpError] = useState("");
   const [successUsername, setSuccessUsername] = useState("");
 
-  // Developer Auth Portal state
-  const [registeredApps, setRegisteredApps] = useState<AppRecord[]>([]);
-  const [appName, setAppName] = useState("");
-  const [redirectUri, setRedirectUri] = useState("");
-  const [devPortalTab, setDevPortalTab] = useState<"apps" | "liveTest" | "sdk">("apps");
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Database Users cache
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
-  // Live OAuth Consent Modal state
-  const [oauthDialog, setOauthDialog] = useState<{
-    isOpen: boolean;
-    clientId: string;
-    appName: string;
-    redirectUri: string;
-  } | null>(null);
-  const [oauthSuccessInfo, setOauthSuccessInfo] = useState<{
-    code: string;
-    redirectUri: string;
-    tokenResult?: any;
-    userResult?: any;
-  } | null>(null);
-  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  // SansMail state
+  const [mails, setMails] = useState<MailRecord[]>([]);
+  const [mailTab, setMailTab] = useState<"inbox" | "sent" | "compose">("inbox");
+  const [selectedMail, setSelectedMail] = useState<MailRecord | null>(null);
 
-  // Fetch apps & check URL params on startup
-  useEffect(() => {
-    fetch("/api/oauth/apps")
-      .then((res) => res.json())
-      .then((data: AppRecord[]) => {
-        if (Array.isArray(data)) {
-          setRegisteredApps(data);
-        }
-      })
-      .catch((err) => console.warn("Error fetching apps:", err));
+  const [mailTo, setMailTo] = useState("");
+  const [mailSubject, setMailSubject] = useState("");
+  const [mailBody, setMailBody] = useState("");
+  const [mailError, setMailError] = useState("");
+  const [mailSuccess, setMailSuccess] = useState("");
+  const [isSendingMail, setIsSendingMail] = useState(false);
+  const [isFetchingMails, setIsFetchingMails] = useState(false);
 
-    // Handle OAuth query parameters if opened by external client
-    const params = new URLSearchParams(window.location.search);
-    const clientIdParam = params.get("client_id");
-    const redirectParam = params.get("redirect_uri");
-
-    if (clientIdParam) {
-      fetch(`/api/oauth/authorize?client_id=${clientIdParam}`)
-        .then((res) => res.json())
-        .then((info) => {
-          if (info.appName) {
-            setOauthDialog({
-              isOpen: true,
-              clientId: info.clientId,
-              appName: info.appName,
-              redirectUri: redirectParam || info.redirectUri,
-            });
-          }
-        })
-        .catch(() => {});
+  const fetchAdminUsers = async () => {
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      if (Array.isArray(data.users)) {
+        setAdminUsers(data.users);
+      }
+    } catch (e) {
+      console.warn("Could not fetch admin users:", e);
     }
+  };
+
+  const fetchMails = async () => {
+    setIsFetchingMails(true);
+    try {
+      const activeUser = successUsername || normalizeUsername(loginUsername);
+      if (!activeUser) return;
+      const res = await fetch(`/api/mail?username=${encodeURIComponent(activeUser)}`);
+      const data = await res.json();
+      if (Array.isArray(data.mails)) {
+        setMails(data.mails);
+      }
+    } catch (e) {
+      console.warn("Error fetching mails:", e);
+    } finally {
+      setIsFetchingMails(false);
+    }
+  };
+
+  // Fetch apps & sync local backup accounts on startup
+  useEffect(() => {
+    // 1. Sync any client-side saved accounts to server
+    try {
+      const localAccs = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
+      if (localAccs.length > 0) {
+        fetch("/api/sync-accounts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accounts: localAccs }),
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
+    // 2. Fetch database users & mails
+    fetchAdminUsers();
   }, []);
 
-  const refreshApps = () => {
-    fetch("/api/oauth/apps")
-      .then((res) => res.json())
-      .then((data: AppRecord[]) => {
-        if (Array.isArray(data)) {
-          setRegisteredApps(data);
-        }
-      })
-      .catch(() => {});
-  };
+  useEffect(() => {
+    if (successUsername) {
+      fetchMails();
+    }
+  }, [successUsername]);
 
   const isPage1Valid = firstName.trim() !== "" && lastName.trim() !== "";
   const isPage3Valid = username.trim() !== "";
@@ -136,6 +156,36 @@ export default function App() {
   const age = calculateAge();
   const isOldEnough = age !== null && age >= 13;
 
+  // Real-time username validation on Page 3 (Sign Up)
+  const handleValidateUsernameAndContinue = async () => {
+    const cleanUser = normalizeUsername(username);
+    if (!cleanUser) {
+      setUsernameAvailabilityError("Please enter a username");
+      return;
+    }
+    if (cleanUser.length < 3) {
+      setUsernameAvailabilityError("Username must be at least 3 characters");
+      return;
+    }
+
+    setIsCheckingUsernameAvail(true);
+    setUsernameAvailabilityError("");
+
+    try {
+      const res = await fetch(`/api/check-availability?username=${encodeURIComponent(cleanUser)}`);
+      const data = await res.json();
+      if (data.available) {
+        setPage(4);
+      } else {
+        setUsernameAvailabilityError(data.message || "That username is already taken. Try another.");
+      }
+    } catch (e) {
+      setUsernameAvailabilityError("Unable to verify username availability");
+    } finally {
+      setIsCheckingUsernameAvail(false);
+    }
+  };
+
   const handleSignUp = async () => {
     try {
       setSignUpError("");
@@ -144,6 +194,9 @@ export default function App() {
         setSignUpError("Please enter a valid username");
         return;
       }
+
+      setIsSigningUp(true);
+      await new Promise((r) => setTimeout(r, 600));
 
       const response = await fetch("/api/signup", {
         method: "POST",
@@ -157,6 +210,16 @@ export default function App() {
       });
       const data = await response.json();
       if (response.ok) {
+        // Save to browser backup storage as well
+        try {
+          const current = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
+          if (!current.some((a: any) => a.username === cleanUser)) {
+            current.push({ username: cleanUser, firstName: firstName.trim(), lastName: lastName.trim(), password: sassword });
+            localStorage.setItem("sanscounts_backup_accounts", JSON.stringify(current));
+          }
+        } catch (e) {}
+
+        fetchAdminUsers();
         setSuccessUsername(cleanUser);
         setPage(6);
       } else {
@@ -164,6 +227,8 @@ export default function App() {
       }
     } catch (error: any) {
       setSignUpError("Backend connection error during sign-up");
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -176,6 +241,9 @@ export default function App() {
         return;
       }
 
+      setIsCheckingLoginUsername(true);
+      await new Promise((r) => setTimeout(r, 450));
+
       const response = await fetch("/api/check-username", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,7 +252,25 @@ export default function App() {
         }),
       });
       const data = await response.json();
-      if (response.ok) {
+
+      let exists = response.ok;
+      if (!exists) {
+        // Check local storage backup if server missed it
+        try {
+          const current = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
+          const found = current.find((a: any) => normalizeUsername(a.username) === cleanUser);
+          if (found) {
+            await fetch("/api/sync-accounts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accounts: [found] }),
+            });
+            exists = true;
+          }
+        } catch (e) {}
+      }
+
+      if (exists) {
         setLoginUsername(cleanUser);
         setLoginStep(2);
       } else {
@@ -192,13 +278,28 @@ export default function App() {
       }
     } catch (error: any) {
       setLoginError("Sanscount doesn't exist!");
+    } finally {
+      setIsCheckingLoginUsername(false);
     }
   };
 
   const handleSignIn = async () => {
+    const cleanUser = normalizeUsername(loginUsername);
+    if (!cleanUser) {
+      setLoginError("Please enter your username");
+      return;
+    }
+    if (!loginSassword) {
+      setLoginError("Please enter your Sassword");
+      return;
+    }
+
+    setIsSigningIn(true);
+    setLoginError("");
+
     try {
-      setLoginError("");
-      const cleanUser = normalizeUsername(loginUsername);
+      // Natural loading delay so the user sees real-time loading feedback
+      await new Promise((r) => setTimeout(r, 650));
 
       const response = await fetch("/api/signin", {
         method: "POST",
@@ -212,101 +313,65 @@ export default function App() {
       if (response.ok) {
         setSuccessUsername(cleanUser);
         setPage(8);
-        refreshApps();
+        fetchAdminUsers();
       } else {
-        setLoginError(data.message || "Sanscount doesn't exist!");
+        if (response.status === 401 || data.message?.toLowerCase().includes("password")) {
+          setLoginError("Incorrect Sassword! Please try again.");
+        } else {
+          setLoginError(data.message || "Sanscount doesn't exist!");
+        }
       }
     } catch (error: any) {
-      setLoginError("Sanscount doesn't exist!");
-    }
-  };
-
-  const handleRegisterApp = async () => {
-    try {
-      const response = await fetch("/api/oauth/register-app", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          appName,
-          redirectUri,
-          owner: successUsername || "sanscounts@gmail.com",
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setAppName("");
-        setRedirectUri("");
-        refreshApps();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleAuthorizeOauth = async () => {
-    if (!oauthDialog) return;
-    setIsAuthorizing(true);
-    try {
-      const activeUser = successUsername || "sans";
-      const response = await fetch("/api/oauth/authorize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: oauthDialog.clientId,
-          redirect_uri: oauthDialog.redirectUri,
-          username: activeUser,
-        }),
-      });
-      const authResult = await response.json();
-      if (response.ok) {
-        // Automatically simulate live real-time token exchange to verify end-to-end
-        const matchingApp = registeredApps.find((a) => a.clientId === oauthDialog.clientId);
-        const secret = matchingApp?.clientSecret || "sc_sec_sansneat_82f1b702e9a1c4";
-
-        const tokenRes = await fetch("/api/oauth/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            client_id: oauthDialog.clientId,
-            client_secret: secret,
-            code: authResult.code,
-          }),
-        });
-        const tokenData = await tokenRes.json();
-
-        let userInfo = null;
-        if (tokenData.access_token) {
-          const userRes = await fetch("/api/oauth/userinfo", {
-            headers: {
-              Authorization: `Bearer ${tokenData.access_token}`,
-            },
-          });
-          userInfo = await userRes.json();
-        }
-
-        setOauthSuccessInfo({
-          code: authResult.code,
-          redirectUri: authResult.redirectUri,
-          tokenResult: tokenData,
-          userResult: userInfo,
-        });
-
-        // If in an actual popup window with opener, broadcast postMessage
-        if (window.opener) {
-          window.opener.postMessage(
-            {
-              type: "SANSCOUNTS_AUTH_SUCCESS",
-              code: authResult.code,
-              redirectUri: authResult.redirectUri,
-            },
-            "*"
-          );
-        }
-      }
-    } catch (err) {
-      console.error(err);
+      setLoginError("Connection error while signing in");
     } finally {
-      setIsAuthorizing(false);
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleSendMail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMailError("");
+    setMailSuccess("");
+
+    if (!mailTo.trim() || !mailSubject.trim() || !mailBody.trim()) {
+      setMailError("All fields are required");
+      return;
+    }
+
+    const cleanTo = normalizeUsername(mailTo);
+    setIsSendingMail(true);
+
+    try {
+      await new Promise((r) => setTimeout(r, 700)); // Elegant sending transition
+      const activeUser = successUsername || "siam";
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender: activeUser,
+          recipient: cleanTo,
+          subject: mailSubject.trim(),
+          body: mailBody.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMailSuccess("Email sent successfully!");
+        setMailTo("");
+        setMailSubject("");
+        setMailBody("");
+        fetchMails();
+        setTimeout(() => {
+          setMailTab("sent");
+          setMailSuccess("");
+        }, 1200);
+      } else {
+        setMailError(data.message || "Error sending email");
+      }
+    } catch (err) {
+      setMailError("Connection error while sending mail");
+    } finally {
+      setIsSendingMail(false);
     }
   };
 
@@ -316,12 +381,8 @@ export default function App() {
     setLoginUsername("");
     setLoginSassword("");
     setLoginError("");
-  };
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(id);
-    setTimeout(() => setCopiedKey(null), 2000);
+    setSelectedMail(null);
+    setMailTab("inbox");
   };
 
   const LogoHeader = () => (
@@ -358,6 +419,7 @@ export default function App() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        gap: '8px',
         marginTop: '15px',
         backgroundColor: disabled ? '#E5E7EB' : '#0099FF',
         color: disabled ? '#9CA3AF' : '#FFFFFF',
@@ -366,28 +428,25 @@ export default function App() {
         letterSpacing: '0.3px',
         border: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        boxShadow: disabled ? 'none' : '0 4px 12px rgba(0, 153, 255, 0.25)'
+        boxShadow: disabled ? 'none' : '0 4px 12px rgba(0, 153, 255, 0.25)',
+        transition: 'all 0.2s'
       }}
     >
       {title}
     </button>
   );
 
-  // Find sansneat client
-  const sansNeatApp = registeredApps.find(
-    (a) => a.clientId === "sc_client_sansneat_live" || a.redirectUri.includes("sansneat")
-  ) || {
-    clientId: "sc_client_sansneat_live",
-    clientSecret: "sc_sec_sansneat_82f1b702e9a1c4",
-    appName: "SansNeat",
-    redirectUri: "https://sansneat.sanssiu.com/auth/callback",
-    owner: "sanscounts@gmail.com",
-    createdAt: "2026-10-01",
-  };
+  const activeUser = successUsername || "siam";
+  const inboxMails = mails.filter((m) => normalizeUsername(m.recipient) === activeUser);
+  const sentMails = mails.filter((m) => normalizeUsername(m.sender) === activeUser);
+
+  // Retrieve current logged in user profile details
+  const matchedUser = adminUsers.find((u) => normalizeUsername(u.username) === activeUser);
+  const userFullName = matchedUser ? `${matchedUser.firstName} ${matchedUser.lastName}` : (activeUser === "siam" ? "Siam Bin" : "User Profile");
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: page === 8 ? '620px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ width: '100%', maxWidth: page === 8 ? '720px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {page === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
@@ -668,17 +727,20 @@ export default function App() {
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: '#FFFFFF',
-              border: focusedField === 'username' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+              border: usernameAvailabilityError ? '1.5px solid #EF4444' : focusedField === 'username' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
               borderRadius: '12px',
               padding: '0 16px',
-              marginBottom: '20px',
+              marginBottom: usernameAvailabilityError ? '8px' : '20px',
               boxSizing: 'border-box'
             }}>
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setUsernameAvailabilityError("");
+                }}
                 onFocus={() => setFocusedField('username')}
                 onBlur={() => setFocusedField(null)}
                 style={{
@@ -692,10 +754,17 @@ export default function App() {
               />
               <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
             </div>
+
+            {usernameAvailabilityError && (
+              <p style={{ color: '#EF4444', fontSize: '14px', marginBottom: '16px', fontWeight: 600, textAlign: 'left', width: '100%', margin: '0 0 16px 0' }}>
+                {usernameAvailabilityError}
+              </p>
+            )}
+
             <PrimaryButton
-              title="Continue"
-              disabled={!isPage3Valid}
-              onPress={() => setPage(4)}
+              title={isCheckingUsernameAvail ? "Checking availability..." : "Continue"}
+              disabled={!isPage3Valid || isCheckingUsernameAvail}
+              onPress={handleValidateUsernameAndContinue}
             />
             <button
               type="button"
@@ -713,31 +782,59 @@ export default function App() {
             <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '35px', letterSpacing: '-0.5px', margin: '0 0 35px 0' }}>
               Create your Sassword
             </h1>
-            <input
-              type="password"
-              placeholder="Sassword"
-              value={sassword}
-              onChange={(e) => setSassword(e.target.value)}
-              onFocus={() => setFocusedField('sassword')}
-              onBlur={() => setFocusedField(null)}
-              style={{
-                width: '100%',
-                height: '52px',
-                backgroundColor: '#FFFFFF',
-                border: focusedField === 'sassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
-                borderRadius: '12px',
-                padding: '0 16px',
-                color: '#000000',
-                fontSize: '17px',
-                marginBottom: '20px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+            <div style={{
+              width: '100%',
+              height: '52px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              border: focusedField === 'sassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+              borderRadius: '12px',
+              padding: '0 12px 0 16px',
+              marginBottom: '20px',
+              boxSizing: 'border-box'
+            }}>
+              <input
+                type={showSassword ? "text" : "password"}
+                placeholder="Sassword"
+                value={sassword}
+                onChange={(e) => setSassword(e.target.value)}
+                onFocus={() => setFocusedField('sassword')}
+                onBlur={() => setFocusedField(null)}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#000000',
+                  fontSize: '17px',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSassword(!showSassword)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#0099FF',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title={showSassword ? "Hide Sassword" : "Show Sassword"}
+              >
+                {showSassword ? "Hide" : "Show"}
+              </button>
+            </div>
             <PrimaryButton
               title="Continue"
               disabled={!isPage4Valid}
-              onPress={() => setPage(5)}
+              onPress={() => setPage(3)}
             />
             <button
               type="button"
@@ -803,8 +900,8 @@ export default function App() {
               </span>
             </button>
             <PrimaryButton
-              title="Create Account"
-              disabled={!agreed}
+              title={isSigningUp ? "Creating Account..." : "Create Account"}
+              disabled={!agreed || isSigningUp}
               onPress={handleSignUp}
             />
             <button
@@ -906,8 +1003,8 @@ export default function App() {
             )}
 
             <PrimaryButton
-              title="Continue"
-              disabled={!isLoginUsernameValid}
+              title={isCheckingLoginUsername ? "Checking Sanscount..." : "Continue"}
+              disabled={!isLoginUsernameValid || isCheckingLoginUsername}
               onPress={handleCheckUsername}
             />
 
@@ -934,27 +1031,55 @@ export default function App() {
               {loginUsername}@sanscounts.san
             </p>
 
-            <input
-              type="password"
-              placeholder="Sassword"
-              value={loginSassword}
-              onChange={(e) => setLoginSassword(e.target.value)}
-              onFocus={() => setFocusedField('loginSassword')}
-              onBlur={() => setFocusedField(null)}
-              style={{
-                width: '100%',
-                height: '52px',
-                backgroundColor: '#FFFFFF',
-                border: focusedField === 'loginSassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
-                borderRadius: '12px',
-                padding: '0 16px',
-                color: '#000000',
-                fontSize: '17px',
-                marginBottom: '15px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+            <div style={{
+              width: '100%',
+              height: '52px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              border: focusedField === 'loginSassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+              borderRadius: '12px',
+              padding: '0 12px 0 16px',
+              marginBottom: '15px',
+              boxSizing: 'border-box'
+            }}>
+              <input
+                type={showLoginSassword ? "text" : "password"}
+                placeholder="Sassword"
+                value={loginSassword}
+                onChange={(e) => setLoginSassword(e.target.value)}
+                onFocus={() => setFocusedField('loginSassword')}
+                onBlur={() => setFocusedField(null)}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#000000',
+                  fontSize: '17px',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginSassword(!showLoginSassword)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#0099FF',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title={showLoginSassword ? "Hide Sassword" : "Show Sassword"}
+              >
+                {showLoginSassword ? "Hide" : "Show"}
+              </button>
+            </div>
 
             <button type="button" style={{ color: '#000000', fontSize: '15px', fontWeight: 500, marginBottom: '24px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               Forgot Sassword ?
@@ -967,13 +1092,14 @@ export default function App() {
             )}
 
             <PrimaryButton
-              title="Sign In"
-              disabled={!isLoginSasswordValid}
+              title={isSigningIn ? "Verifying Sassword..." : "Sign In"}
+              disabled={!isLoginSasswordValid || isSigningIn}
               onPress={handleSignIn}
             />
 
             <button
               type="button"
+              disabled={isSigningIn}
               onClick={() => { setLoginStep(1); setLoginSassword(""); setLoginError(""); }}
               style={{ marginTop: '20px', background: 'none', border: 'none', color: '#6B7280', fontSize: '16px', cursor: 'pointer' }}
             >
@@ -984,363 +1110,486 @@ export default function App() {
 
         {page === 8 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '30px', border: '1.5px solid #0099FF', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ color: '#0099FF', fontSize: '28px', fontWeight: 700 }}>✓</span>
-            </div>
             <LogoHeader />
-            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.5px', margin: '0 0 6px 0' }}>Welcome, {successUsername}!</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#10B981' }}></span>
-              <span style={{ color: '#4B5563', fontSize: '14px', fontWeight: 500 }}>
-                {successUsername}@sanscounts.san (Active Session)
-              </span>
-            </div>
 
-            {/* Developer Auth Portal Section */}
-            <div style={{ width: '100%', backgroundColor: '#FFFFFF', border: '1.5px solid #E5E7EB', borderRadius: '16px', padding: '22px', boxSizing: 'border-box', marginBottom: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
-              <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #F3F4F6', paddingBottom: '14px' }}>
+            {/* Split Column Layout */}
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'row',
+              backgroundColor: '#FFFFFF',
+              border: '1.5px solid #E5E7EB',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+              minHeight: '480px'
+            }}>
+              
+              {/* LEFT COLUMN: Profile Info & Menu Options */}
+              <div style={{
+                width: '32%',
+                backgroundColor: '#F8FAFC',
+                borderRight: '1.5px solid #E5E7EB',
+                padding: '24px 14px 18px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                boxSizing: 'border-box'
+              }}>
                 <div>
-                  <span style={{ fontWeight: 700, fontSize: '16px', color: '#000000', display: 'block' }}>SansCounts Auth (sAuth) Portal</span>
-                  <span style={{ fontSize: '12px', color: '#6B7280' }}>Real-time OAuth 2.0 Provider for Web & Apps</span>
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setDevPortalTab("apps")}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: devPortalTab === "apps" ? '#0099FF' : '#F3F4F6',
-                      color: devPortalTab === "apps" ? '#FFFFFF' : '#4B5563',
-                      border: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Client Apps
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDevPortalTab("liveTest")}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: devPortalTab === "liveTest" ? '#0099FF' : '#F3F4F6',
-                      color: devPortalTab === "liveTest" ? '#FFFFFF' : '#4B5563',
-                      border: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Live Demo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDevPortalTab("sdk")}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: devPortalTab === "sdk" ? '#0099FF' : '#F3F4F6',
-                      color: devPortalTab === "sdk" ? '#FFFFFF' : '#4B5563',
-                      border: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    SDK Snippets
-                  </button>
-                </div>
-              </div>
-
-              {devPortalTab === "apps" && (
-                <div>
-                  {/* Highlighted Client for sansneat.sanssiu.com */}
-                  <div style={{ border: '2px solid #0099FF', borderRadius: '12px', padding: '16px', backgroundColor: '#F0F9FF', marginBottom: '18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 700, fontSize: '16px', color: '#0369A1' }}>SansNeat (sansneat.sanssiu.com)</span>
-                        <span style={{ fontSize: '11px', backgroundColor: '#10B981', color: '#FFFFFF', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>LIVE</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOauthDialog({
-                            isOpen: true,
-                            clientId: sansNeatApp.clientId,
-                            appName: sansNeatApp.appName,
-                            redirectUri: sansNeatApp.redirectUri,
-                          });
-                          setOauthSuccessInfo(null);
-                        }}
-                        style={{
-                          backgroundColor: '#0099FF',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '5px 12px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ⚡ Test Auth
-                      </button>
-                    </div>
-
-                    <p style={{ fontSize: '13px', color: '#0C4A6E', marginBottom: '12px' }}>
-                      Configured for <b>https://sansneat.sanssiu.com</b>. Third-party developers can immediately use these client keys to sign in users with SansCounts!
-                    </p>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', border: '1px solid #BAE6FD' }}>
-                        <div style={{ overflow: 'hidden' }}>
-                          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 600 }}>CLIENT ID</span>
-                          <code style={{ fontSize: '12px', color: '#0284C7', fontWeight: 600 }}>{sansNeatApp.clientId}</code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(sansNeatApp.clientId, 'cid')}
-                          style={{ fontSize: '12px', background: 'none', border: 'none', color: copiedKey === 'cid' ? '#10B981' : '#0284C7', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          {copiedKey === 'cid' ? '✓ Copied' : 'Copy'}
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', border: '1px solid #BAE6FD' }}>
-                        <div style={{ overflow: 'hidden' }}>
-                          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 600 }}>CLIENT SECRET</span>
-                          <code style={{ fontSize: '12px', color: '#0284C7', fontWeight: 600 }}>{sansNeatApp.clientSecret}</code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(sansNeatApp.clientSecret, 'sec')}
-                          style={{ fontSize: '12px', background: 'none', border: 'none', color: copiedKey === 'sec' ? '#10B981' : '#0284C7', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          {copiedKey === 'sec' ? '✓ Copied' : 'Copy'}
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', border: '1px solid #BAE6FD' }}>
-                        <div style={{ overflow: 'hidden' }}>
-                          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 600 }}>REDIRECT URI</span>
-                          <code style={{ fontSize: '12px', color: '#0284C7', fontWeight: 600 }}>{sansNeatApp.redirectUri}</code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(sansNeatApp.redirectUri, 'uri')}
-                          style={{ fontSize: '12px', background: 'none', border: 'none', color: copiedKey === 'uri' ? '#10B981' : '#0284C7', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          {copiedKey === 'uri' ? '✓ Copied' : 'Copy'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Register New App Form */}
-                  <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '10px' }}>
-                      Register Another Client App
-                    </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
-                      <input
-                        type="text"
-                        placeholder="App Name (e.g. My Website)"
-                        value={appName}
-                        onChange={(e) => setAppName(e.target.value)}
-                        style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Redirect URI (e.g. https://example.com/callback)"
-                        value={redirectUri}
-                        onChange={(e) => setRedirectUri(e.target.value)}
-                        style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
-                      />
-                      <button
-                        type="button"
-                        disabled={!appName.trim() || !redirectUri.trim()}
-                        onClick={handleRegisterApp}
-                        style={{
-                          height: '38px',
-                          backgroundColor: (!appName.trim() || !redirectUri.trim()) ? '#E5E7EB' : '#000000',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          fontSize: '13px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        + Create Client Credentials
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {devPortalTab === "liveTest" && (
-                <div>
-                  <p style={{ fontSize: '13px', color: '#4B5563', marginBottom: '14px' }}>
-                    Run a live, end-to-end OAuth 2.0 flow for <b>SansNeat</b>. This tests authorization code issuance, token exchange, and UserInfo profile retrieval in real time:
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOauthDialog({
-                        isOpen: true,
-                        clientId: sansNeatApp.clientId,
-                        appName: sansNeatApp.appName,
-                        redirectUri: sansNeatApp.redirectUri,
-                      });
-                      setOauthSuccessInfo(null);
-                    }}
-                    style={{
-                      width: '100%',
-                      height: '42px',
+                  {/* PROFILE CARD */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    marginBottom: '24px',
+                    paddingBottom: '16px',
+                    borderBottom: '1.5px solid #E5E7EB'
+                  }}>
+                    {/* PROFILE ICON */}
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '28px',
                       backgroundColor: '#0099FF',
                       color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: '8px',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      fontSize: '22px',
                       fontWeight: 700,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      marginBottom: '16px'
-                    }}
-                  >
-                    Open Live SansCounts Consent Screen for SansNeat
-                  </button>
-
-                  {oauthSuccessInfo && (
-                    <div style={{ backgroundColor: '#F8FAFC', border: '1.5px solid #10B981', borderRadius: '10px', padding: '14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
-                        <span style={{ fontWeight: 700, fontSize: '14px', color: '#065F46' }}>Real-Time OAuth Completed Successfully!</span>
-                      </div>
-                      <p style={{ fontSize: '12px', color: '#334155', margin: '4px 0' }}>
-                        <b>Auth Code:</b> <code style={{ color: '#0284C7' }}>{oauthSuccessInfo.code}</code>
-                      </p>
-                      <p style={{ fontSize: '12px', color: '#334155', margin: '4px 0' }}>
-                        <b>Access Token:</b> <code style={{ color: '#0284C7' }}>{oauthSuccessInfo.tokenResult?.access_token?.substring(0, 24)}...</code>
-                      </p>
-                      <p style={{ fontSize: '12px', color: '#334155', margin: '4px 0' }}>
-                        <b>Verified Profile:</b> <code style={{ color: '#059669' }}>{JSON.stringify(oauthSuccessInfo.userResult)}</code>
-                      </p>
+                      marginBottom: '10px',
+                      boxShadow: '0 3px 8px rgba(0,153,255,0.2)'
+                    }}>
+                      {activeUser[0].toUpperCase()}
                     </div>
-                  )}
-                </div>
-              )}
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', display: 'block', wordBreak: 'break-word' }}>
+                      {userFullName}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', wordBreak: 'break-all' }}>
+                      {activeUser}@sanscounts.san
+                    </span>
+                  </div>
 
-              {devPortalTab === "sdk" && (
+                  {/* MENU OPTIONS (knit options) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setMailTab("inbox"); setSelectedMail(null); }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#E0F2FE' : 'transparent',
+                        color: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#475569',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: (mailTab === "inbox" && !selectedMail) ? 700 : 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px' }}>📥</span>
+                      <span style={{ flex: 1 }}>Inbox</span>
+                      <span style={{ fontSize: '11px', backgroundColor: (mailTab === "inbox" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "inbox" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
+                        {inboxMails.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setMailTab("sent"); setSelectedMail(null); }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: (mailTab === "sent" && !selectedMail) ? '#E0F2FE' : 'transparent',
+                        color: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#475569',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: (mailTab === "sent" && !selectedMail) ? 700 : 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px' }}>📤</span>
+                      <span style={{ flex: 1 }}>Sent Messages</span>
+                      <span style={{ fontSize: '11px', backgroundColor: (mailTab === "sent" && !selectedMail) ? '#0369A1' : '#E2E8F0', color: (mailTab === "sent" && !selectedMail) ? '#FFFFFF' : '#475569', padding: '1px 6px', borderRadius: '8px' }}>
+                        {sentMails.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setMailTab("compose"); setSelectedMail(null); }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: mailTab === "compose" ? '#F1F5F9' : 'transparent',
+                        color: mailTab === "compose" ? '#0F172A' : '#475569',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: mailTab === "compose" ? 700 : 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px' }}>📝</span>
+                      <span>Compose Mail</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* LOG OUT AT THE VERY LAST OF THE OPTIONS */}
                 <div>
-                  <p style={{ fontSize: '13px', color: '#374151', marginBottom: '8px', fontWeight: 600 }}>
-                    1. Frontend Button (Add to sansneat.sanssiu.com HTML):
-                  </p>
-                  <pre style={{ backgroundColor: '#0F172A', color: '#E2E8F0', padding: '12px', borderRadius: '8px', fontSize: '12px', overflowX: 'auto', textAlign: 'left', margin: '0 0 16px 0' }}>
-{`<!-- Sign in with SansCounts Button -->
-<a href="${window.location.origin}/?client_id=sc_client_sansneat_live&redirect_uri=https://sansneat.sanssiu.com/auth/callback"
-   style="display:inline-flex;align-items:center;padding:10px 20px;background:#0099FF;color:#fff;border-radius:24px;text-decoration:none;font-weight:bold;font-family:sans-serif;">
-  <span style="margin-right:8px;">🔒</span> Sign in with SansCounts
-</a>`}
-                  </pre>
-
-                  <p style={{ fontSize: '13px', color: '#374151', marginBottom: '8px', fontWeight: 600 }}>
-                    2. Backend Token Exchange (Node.js / Express on sansneat.sanssiu.com):
-                  </p>
-                  <pre style={{ backgroundColor: '#0F172A', color: '#E2E8F0', padding: '12px', borderRadius: '8px', fontSize: '12px', overflowX: 'auto', textAlign: 'left', margin: 0 }}>
-{`// Exchange code received in callback for SansCounts user profile
-const tokenResponse = await fetch("${window.location.origin}/api/oauth/token", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    client_id: "sc_client_sansneat_live",
-    client_secret: "sc_sec_sansneat_82f1b702e9a1c4",
-    code: req.query.code
-  })
-});
-const { access_token, user } = await tokenResponse.json();
-console.log("Logged in user:", user.username, user.email);`}
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            <PrimaryButton
-              title="Sign Out"
-              onPress={handleSignOut}
-            />
-          </div>
-        )}
-
-        {/* Live OAuth Consent Screen Dialog */}
-        {oauthDialog?.isOpen && (
-          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', zIndex: 100 }}>
-            <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-              <LogoHeader />
-              <div style={{ width: '56px', height: '56px', borderRadius: '28px', backgroundColor: '#E0F2FE', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ fontSize: '26px' }}>🔐</span>
-              </div>
-              <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#000000', marginBottom: '8px', textAlign: 'center', margin: '0 0 8px 0' }}>
-                Sign in to {oauthDialog.appName}
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', marginBottom: '20px', margin: '0 0 20px 0' }}>
-                <b>{oauthDialog.appName}</b> is requesting permission to verify your identity using SansCounts Auth.
-              </p>
-
-              <div style={{ width: '100%', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: '#0099FF', color: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 700 }}>
-                  {(successUsername || "S")[0].toUpperCase()}
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#000000', display: 'block' }}>
-                    {successUsername || "sans"}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>
-                    {successUsername || "sans"}@sanscounts.san
-                  </span>
+                  <div style={{ height: '1px', backgroundColor: '#E5E7EB', margin: '14px 0' }}></div>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: 'transparent',
+                      color: '#EF4444',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.15s',
+                      boxSizing: 'border-box'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span>🚪</span>
+                    <span>Log Out</span>
+                  </button>
                 </div>
               </div>
 
-              <div style={{ width: '100%', marginBottom: '20px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '6px' }}>PERMISSIONS</span>
-                <div style={{ fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <span>✓</span> Read your SansCounts username and full name
-                </div>
-                <div style={{ fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>✓</span> Authenticate your session on {oauthDialog.appName}
-                </div>
+              {/* RIGHT COLUMN: Active Views / Details */}
+              <div style={{
+                width: '68%',
+                padding: '24px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                {/* 1. Detail View of Selected Mail */}
+                {selectedMail ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMail(null)}
+                      style={{ background: 'none', border: 'none', color: '#0099FF', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: 0, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      ← Back to List
+                    </button>
+
+                    <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1F2937', marginBottom: '8px', borderBottom: '1.5px solid #F3F4F6', paddingBottom: '10px', margin: '0 0 8px 0' }}>
+                      {selectedMail.subject}
+                    </h2>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <div>
+                        <p style={{ margin: '2px 0', fontSize: '13px', color: '#4B5563' }}>
+                          <b>From:</b> <code style={{ color: '#0099FF', fontWeight: 600 }}>{selectedMail.sender}@sanscounts.san</code>
+                        </p>
+                        <p style={{ margin: '2px 0', fontSize: '13px', color: '#4B5563' }}>
+                          <b>To:</b> <code style={{ color: '#6B7280' }}>{selectedMail.recipient}@sanscounts.san</code>
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                        {new Date(selectedMail.created_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      fontSize: '14px',
+                      color: '#374151',
+                      lineHeight: '22px',
+                      whiteSpace: 'pre-line',
+                      minHeight: '120px'
+                    }}>
+                      {selectedMail.body}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMailTo(selectedMail.sender === activeUser ? selectedMail.recipient : selectedMail.sender);
+                        setMailSubject("Re: " + selectedMail.subject);
+                        setMailBody(`\n\n------------------\nOn ${new Date(selectedMail.created_at).toLocaleString()}, ${selectedMail.sender} wrote:\n> ` + selectedMail.body.replace(/\n/g, "\n> "));
+                        setSelectedMail(null);
+                        setMailTab("compose");
+                      }}
+                      style={{
+                        marginTop: '16px',
+                        backgroundColor: '#0099FF',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '18px',
+                        padding: '8px 18px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ↩ Reply to Message
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* 2. Inbox view */}
+                    {mailTab === "inbox" && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#374151' }}>Received Messages</span>
+                          <button
+                            type="button"
+                            onClick={fetchMails}
+                            style={{ background: 'none', border: 'none', color: '#0099FF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            {isFetchingMails ? "Refreshing..." : "🔄 Refresh"}
+                          </button>
+                        </div>
+
+                        {inboxMails.length === 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '220px' }}>
+                            <span style={{ fontSize: '28px', marginBottom: '8px' }}>📥</span>
+                            <span style={{ color: '#6B7280', fontSize: '13px' }}>Your inbox is completely empty.</span>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
+                            {inboxMails.map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => setSelectedMail(m)}
+                                style={{
+                                  width: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  backgroundColor: '#FFFFFF',
+                                  border: '1.5px solid #F3F4F6',
+                                  borderRadius: '10px',
+                                  padding: '12px 14px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  boxSizing: 'border-box',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1, marginRight: '10px' }}>
+                                  <div style={{ width: '32px', height: '32px', borderRadius: '16px', backgroundColor: '#E0F2FE', color: '#0369A1', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 700, fontSize: '13px', flexShrink: 0 }}>
+                                    {m.sender[0].toUpperCase()}
+                                  </div>
+                                  <div style={{ overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', display: 'block' }}>
+                                      {m.sender}@sanscounts.san
+                                    </span>
+                                    <span style={{ fontSize: '12px', color: '#4B5563', fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {m.subject}
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                      {m.body}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: '10px', color: '#9CA3AF', flexShrink: 0 }}>
+                                  {new Date(m.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 3. Sent view */}
+                    {mailTab === "sent" && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#374151' }}>Sent Messages</span>
+                          <button
+                            type="button"
+                            onClick={fetchMails}
+                            style={{ background: 'none', border: 'none', color: '#0099FF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            {isFetchingMails ? "Refreshing..." : "🔄 Refresh"}
+                          </button>
+                        </div>
+
+                        {sentMails.length === 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '220px' }}>
+                            <span style={{ fontSize: '28px', marginBottom: '8px' }}>📤</span>
+                            <span style={{ color: '#6B7280', fontSize: '13px' }}>You haven't sent any messages yet.</span>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
+                            {sentMails.map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => setSelectedMail(m)}
+                                style={{
+                                  width: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  backgroundColor: '#FFFFFF',
+                                  border: '1.5px solid #F3F4F6',
+                                  borderRadius: '10px',
+                                  padding: '12px 14px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  boxSizing: 'border-box',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1, marginRight: '10px' }}>
+                                  <div style={{ width: '32px', height: '32px', borderRadius: '16px', backgroundColor: '#F3F4F6', color: '#374151', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 700, fontSize: '13px', flexShrink: 0 }}>
+                                    {m.recipient[0].toUpperCase()}
+                                  </div>
+                                  <div style={{ overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', display: 'block' }}>
+                                      To: {m.recipient}@sanscounts.san
+                                    </span>
+                                    <span style={{ fontSize: '12px', color: '#4B5563', fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {m.subject}
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                      {m.body}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: '10px', color: '#9CA3AF', flexShrink: 0 }}>
+                                  {new Date(m.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 4. Compose Form */}
+                    {mailTab === "compose" && (
+                      <form onSubmit={handleSendMail} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'block' }}>
+                          Compose SansMail
+                        </span>
+
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '0 12px', height: '42px', marginBottom: '10px', boxSizing: 'border-box' }}>
+                          <span style={{ fontSize: '13px', color: '#6B7280', width: '35px' }}>To:</span>
+                          <input
+                            type="text"
+                            placeholder="Recipient Username (e.g. sans, auditor)"
+                            value={mailTo}
+                            onChange={(e) => setMailTo(e.target.value)}
+                            style={{ flex: 1, border: 'none', outline: 'none', color: '#000000', fontSize: '13px' }}
+                          />
+                          <span style={{ fontSize: '13px', color: '#9CA3AF' }}>@sanscounts.san</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '0 12px', height: '42px', marginBottom: '10px', boxSizing: 'border-box' }}>
+                          <span style={{ fontSize: '13px', color: '#6B7280', width: '60px' }}>Subject:</span>
+                          <input
+                            type="text"
+                            placeholder="Email Subject"
+                            value={mailSubject}
+                            onChange={(e) => setMailSubject(e.target.value)}
+                            style={{ flex: 1, border: 'none', outline: 'none', color: '#000000', fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <textarea
+                          placeholder="Write your email here..."
+                          value={mailBody}
+                          onChange={(e) => setMailBody(e.target.value)}
+                          style={{
+                            width: '100%',
+                            height: '140px',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #D1D5DB',
+                            outline: 'none',
+                            color: '#000000',
+                            fontSize: '13px',
+                            fontFamily: 'sans-serif',
+                            lineHeight: '18px',
+                            resize: 'none',
+                            boxSizing: 'border-box',
+                            marginBottom: '12px'
+                          }}
+                        />
+
+                        {mailError && (
+                          <p style={{ color: '#EF4444', fontSize: '13px', fontWeight: 600, marginBottom: '10px', margin: '0 0 10px 0' }}>
+                            {mailError}
+                          </p>
+                        )}
+
+                        {mailSuccess && (
+                          <p style={{ color: '#10B981', fontSize: '13px', fontWeight: 600, marginBottom: '10px', margin: '0 0 10px 0' }}>
+                            {mailSuccess}
+                          </p>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={isSendingMail}
+                          style={{
+                            height: '40px',
+                            backgroundColor: isSendingMail ? '#E5E7EB' : '#0099FF',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '13px',
+                            cursor: isSendingMail ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {isSendingMail ? "Sending Email..." : "⚡ Send SansMail"}
+                        </button>
+                      </form>
+                    )}
+                  </>
+                )}
               </div>
 
-              <button
-                type="button"
-                disabled={isAuthorizing}
-                onClick={handleAuthorizeOauth}
-                style={{
-                  width: '100%',
-                  height: '48px',
-                  backgroundColor: '#0099FF',
-                  color: '#FFFFFF',
-                  borderRadius: '24px',
-                  border: 'none',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  marginBottom: '10px'
-                }}
-              >
-                {isAuthorizing ? "Authorizing..." : `Allow & Continue to ${oauthDialog.appName}`}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOauthDialog(null)}
-                style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '14px', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
             </div>
           </div>
         )}
