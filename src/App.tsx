@@ -14,6 +14,17 @@ const normalizeUsername = (val: string) => {
     .replace(/@.*$/i, '');
 };
 
+const getApiUrl = (path: string) => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Route to Cloud Run backend if accessed via custom domain or Vercel
+    if (hostname !== 'localhost' && !hostname.includes('127.0.0.1') && !hostname.includes('google.app')) {
+      return `https://ais-dev-gl7l7glhtpeuxlxne2vhds-717657547726.asia-southeast1.run.app${path}`;
+    }
+  }
+  return path;
+};
+
 interface MailRecord {
   id: number;
   sender: string;
@@ -84,7 +95,7 @@ export default function App() {
 
   const fetchAdminUsers = async () => {
     try {
-      const res = await fetch("/api/admin/users");
+      const res = await fetch(getApiUrl("/api/admin/users"));
       const data = await res.json();
       if (Array.isArray(data.users)) {
         setAdminUsers(data.users);
@@ -99,7 +110,7 @@ export default function App() {
     try {
       const activeUser = successUsername || normalizeUsername(loginUsername);
       if (!activeUser) return;
-      const res = await fetch(`/api/mail?username=${encodeURIComponent(activeUser)}`);
+      const res = await fetch(getApiUrl(`/api/mail?username=${encodeURIComponent(activeUser)}`));
       const data = await res.json();
       if (Array.isArray(data.mails)) {
         setMails(data.mails);
@@ -117,7 +128,7 @@ export default function App() {
     try {
       const localAccs = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
       if (localAccs.length > 0) {
-        fetch("/api/sync-accounts", {
+        fetch(getApiUrl("/api/sync-accounts"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ accounts: localAccs }),
@@ -172,7 +183,7 @@ export default function App() {
     setUsernameAvailabilityError("");
 
     try {
-      const res = await fetch(`/api/check-availability?username=${encodeURIComponent(cleanUser)}`);
+      const res = await fetch(getApiUrl(`/api/check-availability?username=${encodeURIComponent(cleanUser)}`));
       const data = await res.json();
       if (data.available) {
         setPage(4);
@@ -198,7 +209,7 @@ export default function App() {
       setIsSigningUp(true);
       await new Promise((r) => setTimeout(r, 600));
 
-      const response = await fetch("/api/signup", {
+      const response = await fetch(getApiUrl("/api/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -244,7 +255,7 @@ export default function App() {
       setIsCheckingLoginUsername(true);
       await new Promise((r) => setTimeout(r, 450));
 
-      const response = await fetch("/api/check-username", {
+      const response = await fetch(getApiUrl("/api/check-username"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -260,7 +271,7 @@ export default function App() {
           const current = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
           const found = current.find((a: any) => normalizeUsername(a.username) === cleanUser);
           if (found) {
-            await fetch("/api/sync-accounts", {
+            await fetch(getApiUrl("/api/sync-accounts"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ accounts: [found] }),
@@ -277,7 +288,8 @@ export default function App() {
         setLoginError(data.message || "Sanscount doesn't exist!");
       }
     } catch (error: any) {
-      setLoginError("Sanscount doesn't exist!");
+      console.error(error);
+      setLoginError("Connection error while connecting to database.");
     } finally {
       setIsCheckingLoginUsername(false);
     }
@@ -301,7 +313,7 @@ export default function App() {
       // Natural loading delay so the user sees real-time loading feedback
       await new Promise((r) => setTimeout(r, 650));
 
-      const response = await fetch("/api/signin", {
+      const response = await fetch(getApiUrl("/api/signin"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -344,7 +356,7 @@ export default function App() {
     try {
       await new Promise((r) => setTimeout(r, 700)); // Elegant sending transition
       const activeUser = successUsername || "siam";
-      const res = await fetch("/api/mail/send", {
+      const res = await fetch(getApiUrl("/api/mail/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1008,16 +1020,7 @@ export default function App() {
               onPress={handleCheckUsername}
             />
 
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
-              <span style={{ color: '#6B7280', fontSize: '15px' }}>Don't Have an Account?</span>
-              <button
-                type="button"
-                onClick={() => { setPage(1); setLoginError(""); }}
-                style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Sign UP
-              </button>
-            </div>
+
           </div>
         )}
 
