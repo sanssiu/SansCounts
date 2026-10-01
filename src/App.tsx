@@ -31,6 +31,12 @@ export default function App() {
   const [signUpError, setSignUpError] = useState("");
   const [successUsername, setSuccessUsername] = useState("");
 
+  // Developer Auth Portal state
+  const [appName, setAppName] = useState("");
+  const [redirectUri, setRedirectUri] = useState("");
+  const [registeredApp, setRegisteredApp] = useState<{ clientId: string; clientSecret: string; appName: string; redirectUri: string } | null>(null);
+  const [devPortalTab, setDevPortalTab] = useState<"dashboard" | "sdk">("dashboard");
+
   const isPage1Valid = firstName.trim() !== "" && lastName.trim() !== "";
   const isPage3Valid = username.trim() !== "";
   const isPage4Valid = sassword.trim() !== "";
@@ -121,16 +127,37 @@ export default function App() {
     }
   };
 
+  const handleRegisterApp = async () => {
+    try {
+      const response = await fetch("/api/oauth/register-app", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appName,
+          redirectUri,
+          owner: successUsername,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setRegisteredApp(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSignOut = () => {
     setPage(7);
     setLoginStep(1);
     setLoginUsername("");
     setLoginSassword("");
     setLoginError("");
+    setRegisteredApp(null);
   };
 
   const LogoHeader = () => (
-    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: '45px', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: '35px', width: '100%' }}>
       <span style={{ color: '#000000', fontSize: '32px', fontWeight: 700, letterSpacing: '-0.5px' }}>SansCounts</span>
       <img
         src="https://i.postimg.cc/2LCNWvH7/Image.jpg"
@@ -180,7 +207,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ width: '100%', maxWidth: page === 8 ? '560px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {page === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
@@ -764,17 +791,122 @@ export default function App() {
 
         {page === 8 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '30px', border: '1.5px solid #0099FF', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '30px', border: '1.5px solid #0099FF', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
               <span style={{ color: '#0099FF', fontSize: '28px', fontWeight: 700 }}>✓</span>
             </div>
             <LogoHeader />
-            <h1 style={{ color: '#000000', fontSize: '28px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.5px', margin: '0 0 12px 0' }}>Welcome!</h1>
-            <p style={{ color: '#6B7280', fontSize: '16px', textAlign: 'center', lineHeight: '24px', marginBottom: '20px', margin: '0 0 20px 0' }}>
-              You have successfully signed in.
+            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>Welcome, {successUsername}!</h1>
+            <p style={{ color: '#6B7280', fontSize: '15px', textAlign: 'center', marginBottom: '20px', margin: '0 0 20px 0' }}>
+              Signed in with SansCounts Auth.
             </p>
-            <p style={{ color: '#000000', fontSize: '16px', fontWeight: 600, marginBottom: '24px', margin: '0 0 24px 0' }}>
-              {successUsername}@sanscounts.san
-            </p>
+
+            {/* Developer Auth Portal Section */}
+            <div style={{ width: '100%', backgroundColor: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: '16px', padding: '20px', boxSizing: 'border-box', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px' }}>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: '#000000' }}>SansCounts Auth Developer Portal</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDevPortalTab("dashboard")}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: devPortalTab === "dashboard" ? '#0099FF' : 'transparent',
+                      color: devPortalTab === "dashboard" ? '#FFFFFF' : '#4B5563',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    My Apps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDevPortalTab("sdk")}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: devPortalTab === "sdk" ? '#0099FF' : 'transparent',
+                      color: devPortalTab === "sdk" ? '#FFFFFF' : '#4B5563',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    SDK Docs
+                  </button>
+                </div>
+              </div>
+
+              {devPortalTab === "dashboard" && (
+                <div>
+                  <p style={{ fontSize: '14px', color: '#4B5563', marginBottom: '14px', lineHeight: '20px', margin: '0 0 14px 0' }}>
+                    Register your website or app to integrate <b>"Sign in with SansCounts"</b> for your users.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                    <input
+                      type="text"
+                      placeholder="App Name (e.g. My Awesome Site)"
+                      value={appName}
+                      onChange={(e) => setAppName(e.target.value)}
+                      style={{ width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', backgroundColor: '#FFFFFF', outline: 'none' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Redirect URI (e.g. https://myapp.com/callback)"
+                      value={redirectUri}
+                      onChange={(e) => setRedirectUri(e.target.value)}
+                      style={{ width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', backgroundColor: '#FFFFFF', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      disabled={!appName.trim() || !redirectUri.trim()}
+                      onClick={handleRegisterApp}
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        backgroundColor: (!appName.trim() || !redirectUri.trim()) ? '#E5E7EB' : '#0099FF',
+                        color: (!appName.trim() || !redirectUri.trim()) ? '#9CA3AF' : '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Register App & Get API Credentials
+                    </button>
+                  </div>
+
+                  {registeredApp && (
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1.5px solid #0099FF', borderRadius: '10px', padding: '14px' }}>
+                      <p style={{ fontWeight: 700, fontSize: '14px', color: '#0099FF', marginBottom: '6px', margin: '0 0 6px 0' }}>App Registered Successfully!</p>
+                      <p style={{ fontSize: '13px', color: '#374151', margin: '4px 0' }}><b>Client ID:</b> <code>{registeredApp.clientId}</code></p>
+                      <p style={{ fontSize: '13px', color: '#374151', margin: '4px 0' }}><b>Client Secret:</b> <code>{registeredApp.clientSecret}</code></p>
+                      <p style={{ fontSize: '13px', color: '#374151', margin: '4px 0' }}><b>Redirect URI:</b> <code>{registeredApp.redirectUri}</code></p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {devPortalTab === "sdk" && (
+                <div>
+                  <p style={{ fontSize: '14px', color: '#4B5563', marginBottom: '10px', fontWeight: 600, margin: '0 0 10px 0' }}>
+                    Integrate "Sign in with SansCounts" in your App:
+                  </p>
+                  <pre style={{ backgroundColor: '#1F2937', color: '#E5E7EB', padding: '12px', borderRadius: '8px', fontSize: '12px', overflowX: 'auto', textAlign: 'left', margin: 0 }}>
+{`<!-- HTML Button Snippet -->
+<a href="https://sanscounts.sanssiu.com/auth/login?client_id=YOUR_CLIENT_ID"
+   style="background: #0099FF; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+   Sign in with SansCounts
+</a>`}
+                  </pre>
+                </div>
+              )}
+            </div>
+
             <PrimaryButton
               title="Sign Out"
               onPress={handleSignOut}

@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ async function startServer() {
 
   // In-memory fallback database for users so the app works reliably in AI Studio sandbox
   const memoryUsers = new Map<string, { firstName: string; lastName: string; username: string; password: string }>();
+  const developerApps = new Map<string, { clientId: string; clientSecret: string; appName: string; redirectUri: string; owner: string }>();
+  const authCodes = new Map<string, { username: string; clientId: string; redirectUri: string; expiresAt: number }>();
 
   // Attempt MySQL connection with graceful fallback
   let mysqlPool: any = null;
@@ -192,6 +195,43 @@ async function startServer() {
       console.error('Signin exception:', error);
       res.status(500).json({ message: "Sanscount doesn't exist!" });
     }
+  });
+
+  // SansCounts Auth OAuth 2.0 Provider Endpoints for Developers
+  app.post('/api/oauth/register-app', (req, res) => {
+    const { appName, redirectUri, owner } = req.body;
+    if (!appName || !redirectUri) {
+      return res.status(400).json({ message: 'App Name and Redirect URI are required' });
+    }
+    const clientId = 'sc_' + crypto.randomBytes(12).toString('hex');
+    const clientSecret = 'sc_sec_' + crypto.randomBytes(20).toString('hex');
+
+    developerApps.set(clientId, { clientId, clientSecret, appName, redirectUri, owner: owner || 'developer' });
+    res.json({ clientId, clientSecret, appName, redirectUri, message: 'SansCounts Auth App registered successfully' });
+  });
+
+  app.get('/api/oauth/authorize', (req, res) => {
+    const { client_id, redirect_uri } = req.query;
+    const appInfo = developerApps.get(String(client_id));
+    if (!appInfo) {
+      return res.status(400).json({ error: 'Invalid client_id' });
+    }
+    res.json({ status: 'active', appName: appInfo.appName, redirectUri: appInfo.redirectUri });
+  });
+
+  app.post('/api/oauth/token', async (req, res) => {
+    const { client_id, client_secret, code } = req.body;
+    const appInfo = developerApps.get(client_id);
+    if (!appInfo || appInfo.clientSecret !== client_secret) {
+      return res.status(401).json({ error: 'Invalid client credentials' });
+    }
+    const codeData = authCodes.get(code);
+    if (!codeData || codeData.expiresAt < Date.now()) {
+      return res.status(400).json({ error: 'Invalid or expired authorization code' });
+    }
+    authCodes.delete(code);
+    const accessToken = 'sc_token_' + crypto.randomBytes(24).toString('hex');
+    res.json({ access_token: accessToken, token_type: 'Bearer', username: codeData.username });
   });
 
   const isProduction = process.env.NODE_ENV === 'production';
