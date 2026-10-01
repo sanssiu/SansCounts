@@ -39,6 +39,23 @@ async function startServer() {
         mysqlPool = null;
       } else {
         console.log('[MySQL] Successfully connected to MySQL database!');
+        // Ensure users table exists
+        mysqlPool.query(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            first_name VARCHAR(255) NOT NULL,
+            last_name VARCHAR(255) NOT NULL,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `, (tableErr: any) => {
+          if (tableErr) {
+            console.warn('[MySQL] Could not create users table:', tableErr.message);
+          } else {
+            console.log('[MySQL] Users table verified/created successfully.');
+          }
+        });
       }
     });
   } catch (err) {
@@ -64,7 +81,7 @@ async function startServer() {
           (err: any, result: any) => {
             if (err) {
               console.error('MySQL signup error:', err);
-              if (memoryUsers.has(cleanUsername)) {
+              if (err.code === 'ER_DUP_ENTRY' || memoryUsers.has(cleanUsername)) {
                 return res.status(400).json({ message: 'Username already exists' });
               }
               memoryUsers.set(cleanUsername, { firstName, lastName, username: cleanUsername, password: hashedPassword });
@@ -125,7 +142,7 @@ async function startServer() {
               return res.status(401).json({ message: "Incorrect password!" });
             }
 
-            return res.json({ message: 'Sign in successful', user: { username: dbUser.username, firstName: dbUser.first_name } });
+            return res.json({ message: 'Sign in successful', user: { username: dbUser.username, firstName: dbUser.first_name || dbUser.firstName } });
           }
         );
       } else {
@@ -135,7 +152,7 @@ async function startServer() {
         }
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
-        return res.status(401).json({ message: "Incorrect password!" });
+          return res.status(401).json({ message: "Incorrect password!" });
         }
         return res.json({ message: 'Sign in successful', user: { username: user.username, firstName: user.firstName } });
       }
