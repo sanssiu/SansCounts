@@ -24,6 +24,8 @@ export default function App() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginSassword, setLoginSassword] = useState("");
 
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
   const [loginError, setLoginError] = useState("");
   const [signUpError, setSignUpError] = useState("");
   const [successUsername, setSuccessUsername] = useState("");
@@ -166,11 +168,13 @@ export default function App() {
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              onFocus={() => setFocusedField('firstName')}
+              onBlur={() => setFocusedField(null)}
               style={{
                 width: '100%',
                 height: '52px',
-                backgroundColor: '#FAFAFA',
-                border: '1.5px solid #D1D5DB',
+                backgroundColor: '#FFFFFF',
+                border: focusedField === 'firstName' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
                 borderRadius: '12px',
                 padding: '0 16px',
                 color: '#000000',
@@ -185,11 +189,13 @@ export default function App() {
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              onFocus={() => setFocusedField('lastName')}
+              onBlur={() => setFocusedField(null)}
               style={{
                 width: '100%',
                 height: '52px',
-                backgroundColor: '#FAFAFA',
-                border: '1.5px solid #D1D5DB',
+                backgroundColor: '#FFFFFF',
+                border: focusedField === 'lastName' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
                 borderRadius: '12px',
                 padding: '0 16px',
                 color: '#000000',
@@ -233,8 +239,8 @@ export default function App() {
                 style={{
                   flex: 1,
                   height: '50px',
-                  backgroundColor: '#FAFAFA',
-                  border: '1.5px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  border: 'none',
                   borderRadius: '12px',
                   display: 'flex',
                   justifyContent: 'center',
@@ -252,8 +258,8 @@ export default function App() {
                 style={{
                   flex: 1,
                   height: '50px',
-                  backgroundColor: '#FAFAFA',
-                  border: '1.5px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  border: 'none',
                   borderRadius: '12px',
                   display: 'flex',
                   justifyContent: 'center',
@@ -271,8 +277,8 @@ export default function App() {
                 style={{
                   flex: 1.2,
                   height: '50px',
-                  backgroundColor: '#FAFAFA',
-                  border: '1.5px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  border: 'none',
                   borderRadius: '12px',
                   display: 'flex',
                   justifyContent: 'center',
@@ -430,8 +436,8 @@ export default function App() {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FAFAFA',
-              border: '1.5px solid #D1D5DB',
+              backgroundColor: '#FFFFFF',
+              border: focusedField === 'username' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
               borderRadius: '12px',
               padding: '0 16px',
               marginBottom: '20px',
@@ -442,6 +448,8 @@ export default function App() {
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onFocus={() => setFocusedField('username')}
+                onBlur={() => setFocusedField(null)}
                 style={{
                   flex: 1,
                   backgroundColor: 'transparent',
@@ -479,11 +487,13 @@ export default function App() {
               placeholder="Sassword"
               value={sassword}
               onChange={(e) => setSassword(e.target.value)}
+              onFocus={() => setFocusedField('sassword')}
+              onBlur={() => setFocusedField(null)}
               style={{
                 width: '100%',
                 height: '52px',
-                backgroundColor: '#FAFAFA',
-                border: '1.5px solid #D1D5DB',
+                backgroundColor: '#FFFFFF',
+                border: focusedField === 'sassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
                 borderRadius: '12px',
                 padding: '0 16px',
                 color: '#000000',
@@ -617,8 +627,8 @@ export default function App() {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FAFAFA',
-              border: '1.5px solid #D1D5DB',
+              backgroundColor: '#FFFFFF',
+              border: focusedField === 'loginUsername' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
               borderRadius: '12px',
               padding: '0 16px',
               marginBottom: '20px',
@@ -629,6 +639,8 @@ export default function App() {
                 placeholder="Username"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
+                onFocus={() => setFocusedField('loginUsername')}
+                onBlur={() => setFocusedField(null)}
                 style={{
                   flex: 1,
                   backgroundColor: 'transparent',
@@ -646,11 +658,13 @@ export default function App() {
               placeholder="Sassword"
               value={loginSassword}
               onChange={(e) => setLoginSassword(e.target.value)}
+              onFocus={() => setFocusedField('loginSassword')}
+              onBlur={() => setFocusedField(null)}
               style={{
                 width: '100%',
                 height: '52px',
-                backgroundColor: '#FAFAFA',
-                border: '1.5px solid #D1D5DB',
+                backgroundColor: '#FFFFFF',
+                border: focusedField === 'loginSassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
                 borderRadius: '12px',
                 padding: '0 16px',
                 color: '#000000',
