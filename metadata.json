@@ -1,0 +1,5 @@
+{
+  "name": "SansCounts",
+  "description": "SansCounts user account creation and signin application with fullstack backend API.",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
