@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { syncUserToFirestore } from "./firebase.js";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June", 
@@ -160,9 +161,23 @@ export default function App() {
   const getDisplayAppName = () => {
     if (oauthAppInfo?.appName) return oauthAppInfo.appName;
     const rUri = params ? (params.get('redirect_uri') || params.get('redirectUri') || params.get('callback') || '') : '';
-    if (rUri.includes('shusto')) return 'Shusto App';
-    if (rUri.includes('sansneat') || rUri.includes('sans neat')) return 'SansNeat';
-    return 'Shusto App';
+    const appParam = params ? (params.get('app_name') || params.get('appName')) : null;
+    if (appParam) return appParam;
+
+    if (rUri) {
+      try {
+        const url = new URL(rUri);
+        const host = url.hostname.replace('www.', '');
+        if (host.includes('sansneat')) return 'SansNeat';
+        if (host.includes('shusto')) return 'Shusto';
+        const parts = host.split('.');
+        if (parts.length >= 2 && parts[0] !== 'localhost') {
+          const mainName = parts[0];
+          return mainName.charAt(0).toUpperCase() + mainName.slice(1);
+        }
+      } catch (e) {}
+    }
+    return 'SansNeat';
   };
 
   const performOauthCallback = async (usernameOverride?: string) => {
@@ -263,6 +278,10 @@ export default function App() {
     const n = name.toLowerCase().trim();
     return n.includes('sans neat') || n.includes('shusto') || n.includes('sanssiu') || n.includes('sans siu');
   };
+
+  useEffect(() => {
+    syncUserToFirestore({ username: 'siam', firstName: 'Siam', lastName: 'Ahmed', email: 'siam@sanscounts.san' });
+  }, []);
 
   useEffect(() => {
     if (isOauthFlow) {
@@ -429,6 +448,14 @@ export default function App() {
       });
       const data = await response.json();
       if (response.ok) {
+        // Sync to Firestore Database
+        syncUserToFirestore({
+          username: cleanUser,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: `${cleanUser}@sanscounts.san`
+        });
+
         // Save to browser backup storage as well
         try {
           const current = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
@@ -569,6 +596,10 @@ export default function App() {
       }
 
       if (responseOk) {
+        syncUserToFirestore({
+          username: cleanUser,
+          email: `${cleanUser}@sanscounts.san`
+        });
         setSuccessUsername(cleanUser);
         if (isOauthFlow) {
           await performOauthCallback(cleanUser);
