@@ -121,21 +121,34 @@ async function startServer() {
     saveUsersToFile(Array.from(memoryUsers.values()));
   }
 
-  // Seed default SansNeat developer app if empty
+  // Seed default SansNeat and Shusto developer apps if empty
   let appsList = loadAppsFromFile();
-  if (appsList.length === 0 || !appsList.some((a) => a.clientId === 'sc_client_sansneat_live')) {
+  if (!appsList.some((a) => a.clientId === 'sc_client_sansneat_live')) {
     const sansNeatApp: DeveloperAppRecord = {
       clientId: 'sc_client_sansneat_live',
       clientSecret: 'sc_sec_sansneat_82f1b702e9a1c4',
-      appName: 'SansNeat',
+      appName: 'SansNeat (sans neat.sanssiu.com)',
       redirectUri: 'https://sansneat.sanssiu.com/auth/callback',
-      allowedOrigins: ['https://sansneat.sanssiu.com'],
-      owner: 'sanscounts@gmail.com',
+      allowedOrigins: ['https://sansneat.sanssiu.com', 'https://sans neat.sanssiu.com'],
+      owner: 'siam',
       createdAt: new Date().toISOString(),
     };
     appsList.push(sansNeatApp);
-    saveAppsToFile(appsList);
   }
+
+  if (!appsList.some((a) => a.clientId === 'sc_client_shusto_live')) {
+    const shustoApp: DeveloperAppRecord = {
+      clientId: 'sc_client_shusto_live',
+      clientSecret: 'sc_sec_shusto_91d4e803a7c2e1',
+      appName: 'Shusto App',
+      redirectUri: 'https://shusto.sanssiu.com/auth/callback',
+      allowedOrigins: ['https://shusto.sanssiu.com'],
+      owner: 'siam',
+      createdAt: new Date().toISOString(),
+    };
+    appsList.push(shustoApp);
+  }
+  saveAppsToFile(appsList);
 
   const developerApps = new Map<string, DeveloperAppRecord>();
   for (const a of appsList) {

@@ -55,6 +55,7 @@ export default function App() {
 
   const [showPublicShop, setShowPublicShop] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [successUsername, setSuccessUsername] = useState("");
 
   useEffect(() => {
     if (isDeveloperOnlyRoute) {
@@ -98,7 +99,6 @@ export default function App() {
 
   const [loginError, setLoginError] = useState("");
   const [signUpError, setSignUpError] = useState("");
-  const [successUsername, setSuccessUsername] = useState("");
 
   // Database Users cache
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -186,6 +186,12 @@ export default function App() {
     } finally {
       setIsAuthorizing(false);
     }
+  };
+
+  const isFreeInternalApp = (name: string) => {
+    if (!name) return false;
+    const n = name.toLowerCase().trim();
+    return n.includes('sans neat') || n.includes('shusto') || n.includes('sanssiu') || n.includes('sans siu');
   };
 
   useEffect(() => {
@@ -2110,6 +2116,71 @@ export default function App() {
                                     <code style={{ fontSize: '10px', backgroundColor: '#F1F5F9', padding: '6px 10px', borderRadius: '6px', color: '#0099FF', display: 'block', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                                       {`https://sanscounts.sanssiu.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI`}
                                     </code>
+
+                                    {/* Live Sign into SansCounts Button Bar Widget */}
+                                    <div style={{ marginTop: '12px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '8px' }}>🎨 LIVE "SIGN INTO SANSCOUNTS" BUTTON BAR</span>
+                                      
+                                      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                                        <a
+                                          href="#"
+                                          onClick={(e) => e.preventDefault()}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            backgroundColor: '#0099FF',
+                                            color: '#FFFFFF',
+                                            padding: '9px 18px',
+                                            borderRadius: '20px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            textDecoration: 'none',
+                                            boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                                          }}
+                                        >
+                                          <img src="https://i.postimg.cc/2LCNWvH7/Image.jpg" alt="SansCounts" style={{ width: '16px', height: '18px', objectFit: 'contain' }} />
+                                          Sign into SansCounts
+                                        </a>
+
+                                        <a
+                                          href="#"
+                                          onClick={(e) => e.preventDefault()}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            backgroundColor: '#0F172A',
+                                            color: '#FFFFFF',
+                                            padding: '9px 18px',
+                                            borderRadius: '20px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            textDecoration: 'none'
+                                          }}
+                                        >
+                                          <img src="https://i.postimg.cc/2LCNWvH7/Image.jpg" alt="SansCounts" style={{ width: '16px', height: '18px', objectFit: 'contain' }} />
+                                          Sign into SansCounts
+                                        </a>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const activeApp = developerApps[0];
+                                          const cId = activeApp?.clientId || 'sc_client_sansneat_live';
+                                          const rUri = activeApp?.redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
+                                          const codeStr = `<a href="https://sanscounts.sanssiu.com/oauth/authorize?client_id=${cId}&redirect_uri=${encodeURIComponent(rUri)}" style="display:inline-flex;align-items:center;gap:8px;background-color:#0099FF;color:#FFFFFF;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(0,153,255,0.25);"><img src="https://i.postimg.cc/2LCNWvH7/Image.jpg" width="18" height="18" alt="Logo"/>Sign into SansCounts</a>`;
+                                          navigator.clipboard.writeText(codeStr);
+                                          alert("Sign into SansCounts Button Bar HTML Code copied!");
+                                        }}
+                                        style={{ backgroundColor: '#E0F2FE', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', color: '#0369A1', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        Copy Button Bar HTML Code
+                                      </button>
+                                    </div>
                                   </div>
 
                                   <div style={{ height: '1px', backgroundColor: '#F1F5F9' }}></div>
@@ -2220,7 +2291,7 @@ export default function App() {
                                       boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
                                     }}
                                   >
-                                    {devAppName.toLowerCase().includes('sans neat') ? "Proceed to Free Activation" : "Proceed to License Payment ($2.99)"}
+                                    {isFreeInternalApp(devAppName) ? "Proceed to Free Activation" : "Proceed to License Payment ($2.99)"}
                                   </button>
                                 </div>
                               )}
@@ -2229,12 +2300,12 @@ export default function App() {
                               {devStep === "payment" && (
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px', margin: '0 0 4px 0' }}>
-                                    {devAppName.toLowerCase().includes('sans neat') ? "Internal Product Registration" : "Lifetime Developer License"}
+                                    {isFreeInternalApp(devAppName) ? "Internal Product Registration" : "Lifetime Developer License"}
                                   </h3>
                                   <span style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', marginBottom: '16px', display: 'block' }}>
-                                    {devAppName.toLowerCase().includes('sans neat') ? "FREE ($0.00)" : "$2.99"}{" "}
+                                    {isFreeInternalApp(devAppName) ? "FREE ($0.00)" : "$2.99"}{" "}
                                     <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>
-                                      {devAppName.toLowerCase().includes('sans neat') ? "internal license" : "one-time fee"}
+                                      {isFreeInternalApp(devAppName) ? "internal license" : "one-time fee"}
                                     </span>
                                   </span>
                                   
@@ -2243,7 +2314,7 @@ export default function App() {
                                     <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginTop: '2px' }}><b>Domain:</b> {devDomain}</span>
                                   </div>
 
-                                  {devAppName.toLowerCase().includes('sans neat') ? (
+                                  {isFreeInternalApp(devAppName) ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                                       <div style={{ backgroundColor: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
                                         <span style={{ fontSize: '24px' }}>🎁</span>
@@ -2304,7 +2375,7 @@ export default function App() {
                                     </button>
                                     <button
                                       type="button"
-                                      disabled={isProcessingPayment || (!devAppName.toLowerCase().includes('sans neat') && (!cardNumber || !cardExpiry || !cardCVC))}
+                                      disabled={isProcessingPayment || (!isFreeInternalApp(devAppName) && (!cardNumber || !cardExpiry || !cardCVC))}
                                       onClick={async () => {
                                         setIsProcessingPayment(true);
                                         setPaymentError("");
@@ -2347,7 +2418,7 @@ export default function App() {
                                         boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
                                       }}
                                     >
-                                      {isProcessingPayment ? "Activating free keys..." : devAppName.toLowerCase().includes('sans neat') ? "Activate Free Auth Keys" : "Pay $2.99 & Register"}
+                                      {isProcessingPayment ? "Activating free keys..." : isFreeInternalApp(devAppName) ? "Activate Free Auth Keys" : "Pay $2.99 & Register"}
                                     </button>
                                   </div>
                                 </div>
@@ -2390,6 +2461,149 @@ export default function App() {
               </div>
 
             </div>
+          </div>
+        )}
+
+        {page === 9 && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' }}>
+            <LogoHeader />
+            
+            <div style={{
+              width: '100%',
+              backgroundColor: '#FFFFFF',
+              border: '1.5px solid #E5E7EB',
+              borderRadius: '16px',
+              padding: '28px 24px',
+              boxSizing: 'border-box',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+              textAlign: 'center'
+            }}>
+              {/* App connection icons header */}
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '24px', border: '1.5px solid #E5E7EB', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                  <img src="https://i.postimg.cc/2LCNWvH7/Image.jpg" alt="SansCounts" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                </div>
+                <span style={{ fontSize: '18px', color: '#94A3B8' }}>⚡</span>
+                <div style={{ width: '48px', height: '48px', borderRadius: '24px', border: '1.5px solid #0099FF', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#EFF6FF', fontWeight: 'bold', color: '#0099FF', fontSize: '16px' }}>
+                  {oauthAppInfo && oauthAppInfo.appName ? oauthAppInfo.appName[0].toUpperCase() : "App"}
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', marginBottom: '8px', margin: '0 0 8px 0' }}>Authorize Connection</h2>
+              
+              <p style={{ fontSize: '13px', color: '#64748B', lineHeight: '18px', marginBottom: '24px', margin: '0 0 24px 0' }}>
+                <b style={{ color: '#0F172A' }}>{oauthAppInfo ? oauthAppInfo.appName : "Application"}</b> is requesting secure access to your SansCounts account.
+              </p>
+
+              {/* Logged in User Profile Box */}
+              <div style={{
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textAlign: 'left',
+                marginBottom: '24px'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: '#0099FF', color: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '14px' }}>
+                    {activeUser[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', display: 'block' }}>{userFullName}</span>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>{activeUser}@sanscounts.san</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSignOut();
+                  }}
+                  style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                >
+                  Switch Account
+                </button>
+              </div>
+
+              {/* Requested permissions list */}
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>This application will receive:</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '10px' }}>
+                    <span style={{ fontSize: '14px' }}>👤</span>
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155', display: 'block' }}>Your Profile Information</span>
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>First Name, Last Name, and Profile avatar</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '10px' }}>
+                    <span style={{ fontSize: '14px' }}>✉️</span>
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155', display: 'block' }}>Verified Identity</span>
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>Your unique username and custom email</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {oauthError && (
+                <p style={{ color: '#EF4444', fontSize: '13px', fontWeight: 600, marginBottom: '16px', margin: '0 0 16px 0' }}>{oauthError}</p>
+              )}
+
+              {/* Approve & Cancel Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button
+                  type="button"
+                  disabled={isAuthorizing}
+                  onClick={handleApproveOauth}
+                  style={{
+                    width: '100%',
+                    height: '46px',
+                    backgroundColor: isAuthorizing ? '#CBD5E1' : '#0099FF',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '23px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: isAuthorizing ? 'not-allowed' : 'pointer',
+                    boxShadow: isAuthorizing ? 'none' : '0 4px 12px rgba(0, 153, 255, 0.25)'
+                  }}
+                >
+                  {isAuthorizing ? "Authorizing..." : "Authorize & Continue"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isAuthorizing}
+                  onClick={() => {
+                    const redirectUri = params ? params.get('redirect_uri') : null;
+                    if (redirectUri) {
+                      window.location.href = redirectUri + "?error=access_denied";
+                    } else {
+                      window.close();
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    backgroundColor: '#F1F5F9',
+                    color: '#475569',
+                    border: 'none',
+                    borderRadius: '22px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel Connection
+                </button>
+              </div>
+            </div>
+            <span style={{ fontSize: '11px', color: '#94A3B8', marginTop: '16px', textAlign: 'center' }}>
+              Only authorize applications you trust. Developed by SansSiu.
+            </span>
           </div>
         )}
       </div>
