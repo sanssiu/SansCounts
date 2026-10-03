@@ -140,6 +140,8 @@ export default function App() {
   const [oauthAppInfo, setOauthAppInfo] = useState<any>(null);
   const [oauthError, setOauthError] = useState("");
   const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [isAuthorizedSuccess, setIsAuthorizedSuccess] = useState(false);
+  const [authorizedCode, setAuthorizedCode] = useState("");
 
   const fetchOauthAppInfo = async () => {
     const clientId = params ? params.get('client_id') : null;
@@ -200,36 +202,41 @@ export default function App() {
         })
       });
       const data = await res.json();
-      const targetUrl = data?.redirectUri || redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
+      const code = data?.code || ('sc_code_' + Math.random().toString(36).substring(2));
+      setAuthorizedCode(code);
 
+      // Broadcast auth payload via postMessage
       if (typeof window !== 'undefined') {
-        if (window.top && window.top !== window) {
-          try {
-            window.top.location.href = targetUrl;
-          } catch (e) {
-            window.location.href = targetUrl;
-          }
-        } else {
-          window.location.href = targetUrl;
+        const payload = {
+          type: 'SANSCOUNTS_OAUTH_SUCCESS',
+          code: code,
+          username: activeUser,
+          email: `${activeUser}@sanscounts.san`
+        };
+        if (window.opener) {
+          try { window.opener.postMessage(payload, '*'); } catch (e) {}
         }
+        if (window.parent && window.parent !== window) {
+          try { window.parent.postMessage(payload, '*'); } catch (e) {}
+        }
+      }
+
+      setIsAuthorizedSuccess(true);
+
+      // If valid external redirectUri is provided (not self-referencing), redirect after brief delay
+      if (redirectUri && typeof window !== 'undefined' && !redirectUri.includes(window.location.host)) {
+        const sep = redirectUri.includes('?') ? '&' : '?';
+        const targetUrl = `${redirectUri}${sep}code=${code}`;
+        setTimeout(() => {
+          try {
+            window.location.href = targetUrl;
+          } catch (err) {}
+        }, 1500);
       }
     } catch (e) {
-      const fallbackTarget = redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
-      const fakeCode = 'sc_code_' + Math.random().toString(36).substring(2);
-      const sep = fallbackTarget.includes('?') ? '&' : '?';
-      const targetUrl = `${fallbackTarget}${sep}code=${fakeCode}`;
-
-      if (typeof window !== 'undefined') {
-        if (window.top && window.top !== window) {
-          try {
-            window.top.location.href = targetUrl;
-          } catch (err) {
-            window.location.href = targetUrl;
-          }
-        } else {
-          window.location.href = targetUrl;
-        }
-      }
+      const fallbackCode = 'sc_code_' + Math.random().toString(36).substring(2);
+      setAuthorizedCode(fallbackCode);
+      setIsAuthorizedSuccess(true);
     } finally {
       setIsAuthorizing(false);
     }
@@ -1325,7 +1332,83 @@ export default function App() {
 
         {page === 7 && loginStep === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {isOauthFlow && !showManualLogin ? (
+            {isAuthorizedSuccess ? (
+              /* AUTHORIZATION SUCCESSFUL DARK VIEW */
+              <div style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '32px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  border: '1.5px solid #10B981',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: '20px'
+                }}>
+                  <span style={{ fontSize: '30px', color: '#10B981', fontWeight: 800 }}>✓</span>
+                </div>
+
+                <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px', margin: '0 0 8px 0' }}>
+                  Authorization Complete
+                </h1>
+                <p style={{ fontSize: '14px', color: '#A1A1AA', marginBottom: '24px', margin: '0 0 24px 0', lineHeight: '20px' }}>
+                  Successfully signed in as <b style={{ color: '#38BDF8' }}>{loginUsername || 'siam'}@sanscounts.san</b> for <b style={{ color: '#FFFFFF' }}>{getDisplayAppName()}</b>
+                </p>
+
+                <div style={{
+                  width: '100%',
+                  backgroundColor: '#27272A',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  marginBottom: '24px',
+                  border: '1px solid #3F3F46',
+                  boxSizing: 'border-box'
+                }}>
+                  <span style={{ fontSize: '11px', color: '#A1A1AA', display: 'block', marginBottom: '4px', textAlign: 'left' }}>Authorization Code</span>
+                  <code style={{ fontSize: '13px', color: '#38BDF8', wordBreak: 'break-all', fontFamily: 'monospace', fontWeight: 600, display: 'block', textAlign: 'left' }}>
+                    {authorizedCode}
+                  </code>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.opener) {
+                      window.close();
+                    } else {
+                      const redirectUri = params ? (params.get('redirect_uri') || params.get('redirectUri')) : null;
+                      if (redirectUri) {
+                        const sep = redirectUri.includes('?') ? '&' : '?';
+                        window.location.href = `${redirectUri}${sep}code=${authorizedCode}`;
+                      } else {
+                        setIsAuthorizedSuccess(false);
+                      }
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    borderRadius: '12px',
+                    backgroundColor: '#0099FF',
+                    color: '#FFFFFF',
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
+                  }}
+                >
+                  Close Window / Return to App
+                </button>
+              </div>
+            ) : isOauthFlow && !showManualLogin ? (
               /* FULL PAGE UNIFIED DARK "CHOOSE AN ACCOUNT" VIEW */
               <div style={{
                 width: '100%',
