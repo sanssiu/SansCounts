@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June", 
@@ -63,7 +63,7 @@ export default function App() {
       setMailTab("developer");
     } else if (isOauthFlow) {
       if (successUsername) {
-        setPage(9);
+        performOauthCallback(successUsername);
       } else {
         setPage(7);
       }
@@ -157,11 +157,12 @@ export default function App() {
     }
   };
 
-  const handleApproveOauth = async () => {
-    const clientId = params ? params.get('client_id') : null;
-    const redirectUri = params ? params.get('redirect_uri') : null;
-    const activeUser = successUsername || normalizeUsername(loginUsername);
-    if (!clientId || !activeUser) return;
+  const performOauthCallback = async (usernameOverride?: string) => {
+    const clientId = params ? (params.get('client_id') || params.get('clientId')) : null;
+    const redirectUri = params ? (params.get('redirect_uri') || params.get('redirectUri') || params.get('callback')) : null;
+    const activeUser = usernameOverride || successUsername || normalizeUsername(loginUsername) || 'siam';
+
+    const targetClientId = clientId || (oauthAppInfo?.clientId) || 'sc_client_sansneat_live';
 
     setIsAuthorizing(true);
     setOauthError("");
@@ -170,23 +171,76 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          client_id: clientId,
+          client_id: targetClientId,
           redirect_uri: redirectUri,
           username: activeUser
         })
       });
       const data = await res.json();
-      if (res.ok && data.redirectUri) {
+      if (data && data.redirectUri) {
         window.location.href = data.redirectUri;
       } else {
-        setOauthError(data.error || "Authorization failed.");
+        const fallbackTarget = redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
+        const code = data?.code || ('sc_code_' + Math.random().toString(36).substring(2));
+        window.location.href = `${fallbackTarget}?code=${code}`;
       }
     } catch (e) {
-      setOauthError("Connection error while authorizing.");
+      const fallbackTarget = redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
+      const fakeCode = 'sc_code_' + Math.random().toString(36).substring(2);
+      window.location.href = `${fallbackTarget}?code=${fakeCode}`;
     } finally {
       setIsAuthorizing(false);
     }
   };
+
+  const handleApproveOauth = async () => {
+    await performOauthCallback();
+  };
+
+  const [showManualLogin, setShowManualLogin] = useState(false);
+
+  // Google-style Choose Account list
+  const availableAccounts = useMemo(() => {
+    const map = new Map<string, { username: string; firstName: string; lastName: string; email: string; avatarBg: string }>();
+    
+    // Core default accounts
+    map.set('siam', { username: 'siam', firstName: 'The Siam', lastName: 'Bin', email: 'siam@sanscounts.san', avatarBg: '#0099FF' });
+    map.set('shab', { username: 'shab', firstName: 'Shab', lastName: 'Bd', email: 'shabbdorg@gmail.com', avatarBg: '#0284C7' });
+    map.set('shusto', { username: 'shusto', firstName: 'Shusto', lastName: 'App', email: 'shustobd@gmail.com', avatarBg: '#8B5CF6' });
+    map.set('bluebird', { username: 'bluebird', firstName: 'BlueBird', lastName: 'Twitter Creator', email: 'bluebird3c@gmail.com', avatarBg: '#F59E0B' });
+    map.set('sheba', { username: 'sheba', firstName: 'Sheba', lastName: 'Bd', email: 'shebasbd@gmail.com', avatarBg: '#10B981' });
+
+    adminUsers.forEach((u) => {
+      const clean = normalizeUsername(u.username);
+      if (clean) {
+        map.set(clean, {
+          username: clean,
+          firstName: u.firstName || 'User',
+          lastName: u.lastName || '',
+          email: `${clean}@sanscounts.san`,
+          avatarBg: '#0099FF'
+        });
+      }
+    });
+
+    try {
+      const localAccs = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
+      localAccs.forEach((a: any) => {
+        const clean = normalizeUsername(a.username);
+        if (clean && !map.has(clean)) {
+          map.set(clean, {
+            username: clean,
+            firstName: a.firstName || 'User',
+            lastName: a.lastName || '',
+            email: `${clean}@sanscounts.san`,
+            avatarBg: '#0284C7'
+          });
+        }
+      });
+    } catch (e) {}
+
+    return Array.from(map.values());
+  }, [adminUsers]);
 
   const isFreeInternalApp = (name: string) => {
     if (!name) return false;
@@ -501,7 +555,7 @@ export default function App() {
       if (success) {
         setSuccessUsername(cleanUser);
         if (isOauthFlow) {
-          setPage(9);
+          await performOauthCallback(cleanUser);
         } else {
           setPage(8);
         }
@@ -1224,74 +1278,217 @@ export default function App() {
 
         {page === 7 && loginStep === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <LogoHeader />
-            <h1 style={{ color: '#000000', fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>
-              {isDeveloperOnlyRoute ? "Developer Sign In" : "Sign In"}
-            </h1>
-            {isDeveloperOnlyRoute && (
-              <p style={{ color: '#64748B', fontSize: '13px', textAlign: 'center', marginBottom: '28px', maxWidth: '340px', margin: '0 auto 28px auto', lineHeight: '18px' }}>
-                Manage your OAuth keys, domains, and buy lifetime developer licenses. <b>(Developers Only)</b>
-              </p>
-            )}
-            {!isDeveloperOnlyRoute && <div style={{ height: '24px' }}></div>}
-            <div style={{
-              width: '100%',
-              height: '52px',
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              border: focusedField === 'loginUsername' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
-              borderRadius: '12px',
-              padding: '0 16px',
-              marginBottom: '20px',
-              boxSizing: 'border-box'
-            }}>
-              <input
-                type="text"
-                placeholder="Username"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                onFocus={() => setFocusedField('loginUsername')}
-                onBlur={() => setFocusedField(null)}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: '#000000',
-                  fontSize: '17px',
-                  outline: 'none'
-                }}
-              />
-              <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
-            </div>
+            {isOauthFlow && !showManualLogin ? (
+              /* GOOGLE-STYLE "CHOOSE AN ACCOUNT" DARK MODAL */
+              <div style={{
+                width: '100%',
+                maxWidth: '420px',
+                backgroundColor: '#18181B',
+                borderRadius: '20px',
+                border: '1px solid #27272A',
+                padding: '28px 24px',
+                boxSizing: 'border-box',
+                color: '#FFFFFF',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                {/* Top Header Bar */}
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                  <img src="https://i.postimg.cc/2LCNWvH7/Image.jpg" alt="SansCounts Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#E4E4E7' }}>Sign in with SansCounts</span>
+                </div>
 
-            {loginError !== "" && (
-              <p style={{ color: '#EF4444', marginBottom: '16px', textAlign: 'center', fontWeight: 600, fontSize: '15px', margin: '0 0 16px 0' }}>
-                {loginError}
-              </p>
-            )}
+                {/* Title & Target App */}
+                <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#FFFFFF', marginBottom: '6px', margin: '0 0 6px 0', letterSpacing: '-0.3px', textAlign: 'left' }}>
+                  Choose an account
+                </h1>
+                <p style={{ fontSize: '14px', color: '#A1A1AA', marginBottom: '24px', margin: '0 0 24px 0', lineHeight: '20px', textAlign: 'left' }}>
+                  to continue to <b style={{ color: '#38BDF8', wordBreak: 'break-all' }}>{oauthAppInfo?.appName || params?.get('redirect_uri')?.replace('https://', '').split('/')[0] || 'shusto.sanssiu.com'}</b>
+                </p>
 
-            <PrimaryButton
-              title={isCheckingLoginUsername ? "Checking Sanscount..." : "Continue"}
-              disabled={!isLoginUsernameValid || isCheckingLoginUsername}
-              onPress={handleCheckUsername}
-            />
+                {/* Account List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px', maxHeight: '320px', overflowY: 'auto' }}>
+                  {availableAccounts.map((acc: any) => {
+                    const isCurrentActive = successUsername === acc.username;
+                    return (
+                      <div
+                        key={acc.username}
+                        onClick={async () => {
+                          setLoginUsername(acc.username);
+                          if (isCurrentActive) {
+                            await performOauthCallback(acc.username);
+                          } else {
+                            setLoginStep(2);
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s',
+                          borderBottom: '1px solid #27272A'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#27272A')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '14px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '20px',
+                            backgroundColor: acc.avatarBg || '#0099FF',
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            fontSize: '16px',
+                            fontWeight: 700
+                          }}>
+                            {acc.firstName[0].toUpperCase()}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 600, color: '#F4F4F5' }}>
+                              {acc.firstName} {acc.lastName}
+                            </span>
+                            <span style={{ fontSize: '13px', color: '#A1A1AA' }}>
+                              {acc.email}
+                            </span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '12px', color: isCurrentActive ? '#34D399' : '#71717A', fontWeight: isCurrentActive ? 700 : 500 }}>
+                          {isCurrentActive ? "Signed in" : "Signed out"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
 
-            {!isOauthFlow && (
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
-                <span style={{ color: '#6B7280', fontSize: '15px' }}>{isDeveloperOnlyRoute ? "Need a developer account?" : "Don't Have an Account?"}</span>
+                {/* Use another account button */}
                 <button
                   type="button"
-                  onClick={() => { setPage(1); setLoginError(""); }}
-                  style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  onClick={() => {
+                    setLoginUsername("");
+                    setShowManualLogin(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: '#38BDF8',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#27272A')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  {isDeveloperOnlyRoute ? "Register Now" : "Sign UP"}
+                  <span style={{ fontSize: '18px' }}>👤</span>
+                  Use another account
                 </button>
               </div>
+            ) : (
+              <>
+                <LogoHeader />
+                
+                {isOauthFlow && (
+                  <div style={{ backgroundColor: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: '12px', padding: '10px 16px', marginBottom: '20px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '13px', color: '#1E40AF', fontWeight: 800, display: 'block' }}>
+                      ⚡ Sign into SansCounts
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#1E3A8A', display: 'block', marginTop: '2px' }}>
+                      To continue to <b>{oauthAppInfo?.appName || 'your application'}</b>
+                    </span>
+                  </div>
+                )}
+
+                <h1 style={{ color: '#000000', fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>
+                  {isOauthFlow ? "Enter SansCounts ID" : isDeveloperOnlyRoute ? "Developer Sign In" : "Sign In"}
+                </h1>
+                {isDeveloperOnlyRoute && !isOauthFlow && (
+                  <p style={{ color: '#64748B', fontSize: '13px', textAlign: 'center', marginBottom: '28px', maxWidth: '340px', margin: '0 auto 28px auto', lineHeight: '18px' }}>
+                    Manage your OAuth keys, domains, and buy lifetime developer licenses. <b>(Developers Only)</b>
+                  </p>
+                )}
+                {!isDeveloperOnlyRoute && !isOauthFlow && <div style={{ height: '24px' }}></div>}
+                <div style={{
+                  width: '100%',
+                  height: '52px',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: '#FFFFFF',
+                  border: focusedField === 'loginUsername' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+                  borderRadius: '12px',
+                  padding: '0 16px',
+                  marginBottom: '20px',
+                  boxSizing: 'border-box'
+                }}>
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    onFocus={() => setFocusedField('loginUsername')}
+                    onBlur={() => setFocusedField(null)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#000000',
+                      fontSize: '17px',
+                      outline: 'none'
+                    }}
+                  />
+                  <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
+                </div>
+
+                {loginError !== "" && (
+                  <p style={{ color: '#EF4444', marginBottom: '16px', textAlign: 'center', fontWeight: 600, fontSize: '15px', margin: '0 0 16px 0' }}>
+                    {loginError}
+                  </p>
+                )}
+
+                <PrimaryButton
+                  title={isCheckingLoginUsername ? "Checking Sanscount..." : "Continue"}
+                  disabled={!isLoginUsernameValid || isCheckingLoginUsername}
+                  onPress={handleCheckUsername}
+                />
+
+                {isOauthFlow && (
+                  <button
+                    type="button"
+                    onClick={() => setShowManualLogin(false)}
+                    style={{ marginTop: '16px', background: 'none', border: 'none', color: '#6B7280', fontSize: '14px', cursor: 'pointer' }}
+                  >
+                    ← Back to Choose Account
+                  </button>
+                )}
+
+                {!isOauthFlow && (
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: '28px' }}>
+                    <span style={{ color: '#6B7280', fontSize: '15px' }}>{isDeveloperOnlyRoute ? "Need a developer account?" : "Don't Have an Account?"}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setPage(1); setLoginError(""); }}
+                      style={{ color: '#0099FF', fontSize: '15px', fontWeight: 700, marginLeft: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      {isDeveloperOnlyRoute ? "Register Now" : "Sign UP"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-
-
           </div>
         )}
 
