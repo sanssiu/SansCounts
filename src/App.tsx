@@ -226,41 +226,34 @@ export default function App() {
 
   const [showManualLogin, setShowManualLogin] = useState(false);
 
-  // Real accounts list only (No fake demo data)
+  // Real verified accounts list only - No fake or dummy email addresses
   const availableAccounts = useMemo(() => {
     const map = new Map<string, { username: string; firstName: string; lastName: string; email: string; avatarBg: string }>();
     
-    // Primary User Account
-    map.set('siam', { username: 'siam', firstName: 'Siam', lastName: 'Ahmed', email: 'sanscounts@gmail.com', avatarBg: '#0099FF' });
+    // Primary Verified User Account
+    map.set('siam', {
+      username: 'siam',
+      firstName: 'Siam',
+      lastName: 'Ahmed',
+      email: 'siam@sanscounts.san',
+      avatarBg: '#0099FF'
+    });
 
+    // Add only actual users registered in the database
     adminUsers.forEach((u) => {
       const clean = normalizeUsername(u.username);
-      if (clean && clean !== 'siam') {
+      const isFakeDemoName = ['shub', 'shab', 'shusto', 'bluebird', 'sheba'].includes(clean);
+      if (clean && clean !== 'siam' && !isFakeDemoName) {
+        const email = u.email || (u.username.includes('@') ? u.username : `${clean}@sanscounts.san`);
         map.set(clean, {
           username: clean,
-          firstName: u.firstName || 'User',
+          firstName: u.firstName || clean,
           lastName: u.lastName || '',
-          email: `${clean}@sanscounts.san`,
+          email: email,
           avatarBg: '#0284C7'
         });
       }
     });
-
-    try {
-      const localAccs = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
-      localAccs.forEach((a: any) => {
-        const clean = normalizeUsername(a.username);
-        if (clean && !map.has(clean)) {
-          map.set(clean, {
-            username: clean,
-            firstName: a.firstName || 'User',
-            lastName: a.lastName || '',
-            email: `${clean}@sanscounts.san`,
-            avatarBg: '#0284C7'
-          });
-        }
-      });
-    } catch (e) {}
 
     return Array.from(map.values());
   }, [adminUsers]);
@@ -274,6 +267,9 @@ export default function App() {
   useEffect(() => {
     if (isOauthFlow) {
       fetchOauthAppInfo();
+      document.body.style.backgroundColor = '#09090B';
+    } else {
+      document.body.style.backgroundColor = '#FFFFFF';
     }
   }, [isOauthFlow]);
 
@@ -387,13 +383,23 @@ export default function App() {
     try {
       const res = await fetch(getApiUrl(`/api/check-availability?username=${encodeURIComponent(cleanUser)}`));
       const data = await res.json();
-      if (data.available) {
+      if (res.ok && data.available) {
         setPage(4);
       } else {
         setUsernameAvailabilityError(data.message || "That username is already taken. Try another.");
       }
     } catch (e) {
-      setUsernameAvailabilityError("Unable to verify username availability");
+      try {
+        const localAccs = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
+        const isTaken = localAccs.some((a: any) => normalizeUsername(a.username) === cleanUser) || cleanUser === 'siam';
+        if (!isTaken) {
+          setPage(4);
+        } else {
+          setUsernameAvailabilityError("That username is already taken. Try another.");
+        }
+      } catch (err) {
+        setUsernameAvailabilityError("That username is already taken. Try another.");
+      }
     } finally {
       setIsCheckingUsernameAvail(false);
     }
@@ -528,10 +534,9 @@ export default function App() {
     setLoginError("");
 
     try {
-      // Natural loading delay so the user sees real-time loading feedback
-      await new Promise((r) => setTimeout(r, 650));
+      await new Promise((r) => setTimeout(r, 450));
 
-      let success = false;
+      let responseOk = false;
       let apiError = "";
 
       try {
@@ -544,38 +549,26 @@ export default function App() {
           }),
         });
         const data = await response.json();
-        success = response.ok;
-        if (!success) {
-          if (response.status === 401 || data.message?.toLowerCase().includes("password")) {
-            apiError = "Incorrect Sassword! Please try again.";
-          } else {
-            apiError = data.message || "Sanscount doesn't exist!";
-          }
+        responseOk = response.ok;
+        if (!responseOk) {
+          apiError = data.message || "Incorrect Sassword! Please try again.";
         }
       } catch (err) {
-        console.warn("Server signin failed, using backup check:", err);
-      }
-
-      if (!success) {
-        // Local storage or fallback sign in
+        // Only if network fails entirely, check local accounts with EXACT password
         try {
           const current = JSON.parse(localStorage.getItem("sanscounts_backup_accounts") || "[]");
           const found = current.find((a: any) => normalizeUsername(a.username) === cleanUser);
-          if (found) {
-            // For backup accounts, we accept any password or password match if saved
-            if (!found.password || found.password === loginSassword || loginSassword.length > 0) {
-              success = true;
-            } else {
-              apiError = "Incorrect Sassword! Please try again.";
-            }
-          } else if (cleanUser === 'siam') {
-            // Perfect fallback for siam developer testing
-            success = true;
+          if (found && found.password === loginSassword) {
+            responseOk = true;
+          } else {
+            apiError = "Incorrect Sassword! Please try again.";
           }
-        } catch (e) {}
+        } catch (e) {
+          apiError = "Incorrect Sassword! Please try again.";
+        }
       }
 
-      if (success) {
+      if (responseOk) {
         setSuccessUsername(cleanUser);
         if (isOauthFlow) {
           await performOauthCallback(cleanUser);
@@ -587,7 +580,7 @@ export default function App() {
         setLoginError(apiError || "Incorrect Sassword! Please try again.");
       }
     } catch (error: any) {
-      setLoginError("Connection error while signing in");
+      setLoginError("Incorrect Sassword! Please try again.");
     } finally {
       setIsSigningIn(false);
     }
@@ -710,7 +703,7 @@ export default function App() {
   const userFullName = matchedUser ? `${matchedUser.firstName} ${matchedUser.lastName}` : (activeUser === "siam" ? "Siam Bin" : "User Profile");
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
+    <div style={{ minHeight: '100vh', width: '100%', backgroundColor: isOauthFlow ? '#09090B' : '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px', boxSizing: 'border-box' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: page === 8 ? '720px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         {/* PUBLIC SANSCOUNTS AUTH SHOP MODAL */}
@@ -1175,7 +1168,7 @@ export default function App() {
             <PrimaryButton
               title="Continue"
               disabled={!isPage4Valid}
-              onPress={() => setPage(3)}
+              onPress={() => setPage(5)}
             />
             <button
               type="button"

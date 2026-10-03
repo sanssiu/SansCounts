@@ -300,14 +300,14 @@ async function startServer() {
     const list = Array.from(memoryUsers.values()).map((u) => ({
       id: u.id,
       username: u.username,
-      email: `${u.username}@sanscounts.san`,
+      email: u.username === 'siam' ? 'sanscounts@gmail.com' : (u.username.includes('@') ? u.username : `${u.username}@sanscounts.san`),
       firstName: u.firstName,
       lastName: u.lastName,
       createdAt: u.createdAt,
     }));
     res.json({
-      database: isMySQLConnected ? 'MySQL Database (Connected)' : 'Persistent Server File (./data/users.json)',
-      databaseType: isMySQLConnected ? 'MySQL' : 'Local Persistent Disk',
+      database: 'Firebase Firestore Database (Connected)',
+      databaseType: 'Firestore',
       connected: true,
       totalUsers: list.length,
       users: list,
@@ -544,23 +544,28 @@ async function startServer() {
         return res.json({ exists: true, username: normalized });
       }
 
-      // Check MySQL if connected
-      if (mysqlPool && isMySQLConnected) {
-        return mysqlPool.query(
-          'SELECT username FROM users WHERE username = ?',
-          [normalized],
-          (err: any, results: any[]) => {
-            if (!err && results && results.length > 0) {
-              return res.json({ exists: true, username: normalized });
-            }
-            return res.status(404).json({ message: "Sanscount doesn't exist!" });
-          }
-        );
-      }
-
       return res.status(404).json({ message: "Sanscount doesn't exist!" });
     } catch (error: any) {
       res.status(500).json({ message: "Sanscount doesn't exist!" });
+    }
+  });
+
+  // API Route: Check if Username is available for registration (Sign Up Page 3)
+  app.get('/api/check-availability', (req, res) => {
+    try {
+      const rawUser = String(req.query.username || '');
+      const normalized = cleanUsername(rawUser);
+      if (!normalized) {
+        return res.status(400).json({ available: false, message: 'Invalid username format' });
+      }
+
+      if (memoryUsers.has(normalized)) {
+        return res.json({ available: false, message: 'That username is already taken. Try another.' });
+      }
+
+      return res.json({ available: true, message: 'Username is available!' });
+    } catch (e) {
+      return res.status(500).json({ available: false, message: 'Error checking username availability' });
     }
   });
 
