@@ -267,7 +267,7 @@ export default function App() {
   useEffect(() => {
     if (isOauthFlow) {
       fetchOauthAppInfo();
-      document.body.style.backgroundColor = '#09090B';
+      document.body.style.backgroundColor = '#18181B';
     } else {
       document.body.style.backgroundColor = '#FFFFFF';
     }
@@ -645,7 +645,7 @@ export default function App() {
 
   const LogoHeader = () => (
     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: '35px', width: '100%' }}>
-      <span style={{ color: '#000000', fontSize: '32px', fontWeight: 700, letterSpacing: '-0.5px' }}>SansCounts</span>
+      <span style={{ color: isOauthFlow ? '#FFFFFF' : '#000000', fontSize: '32px', fontWeight: 700, letterSpacing: '-0.5px' }}>SansCounts</span>
       <img
         src="https://i.postimg.cc/2LCNWvH7/Image.jpg"
         alt="SansCounts Logo"
@@ -703,7 +703,7 @@ export default function App() {
   const userFullName = matchedUser ? `${matchedUser.firstName} ${matchedUser.lastName}` : (activeUser === "siam" ? "Siam Bin" : "User Profile");
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', backgroundColor: isOauthFlow ? '#09090B' : '#FFFFFF', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', width: '100%', backgroundColor: isOauthFlow ? '#18181B' : '#FFFFFF', color: isOauthFlow ? '#FFFFFF' : '#000000', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px', boxSizing: 'border-box' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: page === 8 ? '720px' : '420px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         {/* PUBLIC SANSCOUNTS AUTH SHOP MODAL */}
@@ -1295,17 +1295,9 @@ export default function App() {
         {page === 7 && loginStep === 1 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {isOauthFlow && !showManualLogin ? (
-              /* GOOGLE-STYLE "CHOOSE AN ACCOUNT" DARK MODAL */
+              /* FULL PAGE UNIFIED DARK "CHOOSE AN ACCOUNT" VIEW */
               <div style={{
                 width: '100%',
-                maxWidth: '420px',
-                backgroundColor: '#18181B',
-                borderRadius: '20px',
-                border: '1px solid #27272A',
-                padding: '28px 24px',
-                boxSizing: 'border-box',
-                color: '#FFFFFF',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
                 display: 'flex',
                 flexDirection: 'column'
               }}>
@@ -1414,17 +1406,17 @@ export default function App() {
                 <LogoHeader />
                 
                 {isOauthFlow && (
-                  <div style={{ backgroundColor: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: '12px', padding: '10px 16px', marginBottom: '20px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
-                    <span style={{ fontSize: '13px', color: '#1E40AF', fontWeight: 800, display: 'block' }}>
+                  <div style={{ backgroundColor: '#27272A', border: '1.5px solid #3F3F46', borderRadius: '12px', padding: '10px 16px', marginBottom: '20px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '13px', color: '#38BDF8', fontWeight: 800, display: 'block' }}>
                       ⚡ Sign into SansCounts
                     </span>
-                    <span style={{ fontSize: '11px', color: '#1E3A8A', display: 'block', marginTop: '2px' }}>
-                      To continue to <b>{oauthAppInfo?.appName || 'your application'}</b>
+                    <span style={{ fontSize: '11px', color: '#A1A1AA', display: 'block', marginTop: '2px' }}>
+                      To continue to <b style={{ color: '#FFFFFF' }}>{oauthAppInfo?.appName || 'your application'}</b>
                     </span>
                   </div>
                 )}
 
-                <h1 style={{ color: '#000000', fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>
+                <h1 style={{ color: isOauthFlow ? '#FFFFFF' : '#000000', fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.5px', margin: '0 0 8px 0' }}>
                   {isOauthFlow ? "Enter SansCounts ID" : isDeveloperOnlyRoute ? "Developer Sign In" : "Sign In"}
                 </h1>
                 {isDeveloperOnlyRoute && !isOauthFlow && (
@@ -1439,8 +1431,10 @@ export default function App() {
                   display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'center',
-                  backgroundColor: '#FFFFFF',
-                  border: focusedField === 'loginUsername' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+                  backgroundColor: isOauthFlow ? '#27272A' : '#FFFFFF',
+                  border: isOauthFlow
+                    ? (focusedField === 'loginUsername' ? '1.5px solid #38BDF8' : '1px solid #3F3F46')
+                    : (focusedField === 'loginUsername' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB'),
                   borderRadius: '12px',
                   padding: '0 16px',
                   marginBottom: '20px',
@@ -1457,12 +1451,12 @@ export default function App() {
                       flex: 1,
                       backgroundColor: 'transparent',
                       border: 'none',
-                      color: '#000000',
+                      color: isOauthFlow ? '#FFFFFF' : '#000000',
                       fontSize: '17px',
                       outline: 'none'
                     }}
                   />
-                  <span style={{ color: '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
+                  <span style={{ color: isOauthFlow ? '#A1A1AA' : '#6B7280', fontSize: '15px', marginRight: '4px' }}>@sanscounts.san</span>
                 </div>
 
                 {loginError !== "" && (
@@ -1481,7 +1475,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setShowManualLogin(false)}
-                    style={{ marginTop: '16px', background: 'none', border: 'none', color: '#6B7280', fontSize: '14px', cursor: 'pointer' }}
+                    style={{ marginTop: '16px', background: 'none', border: 'none', color: '#38BDF8', fontSize: '14px', cursor: 'pointer' }}
                   >
                     ← Back to Choose Account
                   </button>
@@ -1507,10 +1501,10 @@ export default function App() {
         {page === 7 && loginStep === 2 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <LogoHeader />
-            <h1 style={{ color: '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.5px', margin: '0 0 10px 0' }}>
+            <h1 style={{ color: isOauthFlow ? '#FFFFFF' : '#000000', fontSize: '26px', fontWeight: 700, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.5px', margin: '0 0 10px 0' }}>
               Enter Sassword
             </h1>
-            <p style={{ color: '#6B7280', fontSize: '15px', marginBottom: '35px', margin: '0 0 35px 0' }}>
+            <p style={{ color: isOauthFlow ? '#A1A1AA' : '#6B7280', fontSize: '15px', marginBottom: '35px', margin: '0 0 35px 0' }}>
               {loginUsername}@sanscounts.san
             </p>
 
@@ -1520,8 +1514,10 @@ export default function App() {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              border: focusedField === 'loginSassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB',
+              backgroundColor: isOauthFlow ? '#27272A' : '#FFFFFF',
+              border: isOauthFlow
+                ? (focusedField === 'loginSassword' ? '1.5px solid #38BDF8' : '1px solid #3F3F46')
+                : (focusedField === 'loginSassword' ? '1.5px solid #0099FF' : '1.5px solid #D1D5DB'),
               borderRadius: '12px',
               padding: '0 12px 0 16px',
               marginBottom: '15px',
@@ -1538,7 +1534,7 @@ export default function App() {
                   flex: 1,
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#000000',
+                  color: isOauthFlow ? '#FFFFFF' : '#000000',
                   fontSize: '17px',
                   outline: 'none'
                 }}
@@ -1549,7 +1545,7 @@ export default function App() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#0099FF',
+                  color: isOauthFlow ? '#38BDF8' : '#0099FF',
                   fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -1564,7 +1560,7 @@ export default function App() {
               </button>
             </div>
 
-            <button type="button" style={{ color: '#000000', fontSize: '15px', fontWeight: 500, marginBottom: '24px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <button type="button" style={{ color: isOauthFlow ? '#A1A1AA' : '#000000', fontSize: '15px', fontWeight: 500, marginBottom: '24px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               Forgot Sassword ?
             </button>
 
