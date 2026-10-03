@@ -54,13 +54,20 @@ export default function App() {
   const isDeveloperOnlyRoute = isDevDomain || (params ? params.get('dev') === 'true' : false);
 
   const [showPublicShop, setShowPublicShop] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     if (isDeveloperOnlyRoute) {
       setPage(7);
       setMailTab("developer");
+    } else if (isOauthFlow) {
+      if (successUsername) {
+        setPage(9);
+      } else {
+        setPage(7);
+      }
     }
-  }, [isDeveloperOnlyRoute]);
+  }, [isDeveloperOnlyRoute, isOauthFlow, successUsername]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -127,6 +134,65 @@ export default function App() {
   const [paymentError, setPaymentError] = useState("");
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [generatedApp, setGeneratedApp] = useState<any>(null);
+
+  // OAuth Consent Screen state & logic
+  const [oauthAppInfo, setOauthAppInfo] = useState<any>(null);
+  const [oauthError, setOauthError] = useState("");
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+
+  const fetchOauthAppInfo = async () => {
+    const clientId = params ? params.get('client_id') : null;
+    const redirectUri = params ? params.get('redirect_uri') : null;
+    if (!clientId) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri || '')}`));
+      const data = await res.json();
+      if (res.ok) {
+        setOauthAppInfo(data);
+      } else {
+        setOauthError(data.error || "Invalid client_id");
+      }
+    } catch (e) {
+      setOauthError("Connection error while loading app details.");
+    }
+  };
+
+  const handleApproveOauth = async () => {
+    const clientId = params ? params.get('client_id') : null;
+    const redirectUri = params ? params.get('redirect_uri') : null;
+    const activeUser = successUsername || normalizeUsername(loginUsername);
+    if (!clientId || !activeUser) return;
+
+    setIsAuthorizing(true);
+    setOauthError("");
+    try {
+      const res = await fetch(getApiUrl("/api/oauth/authorize"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          username: activeUser
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.redirectUri) {
+        window.location.href = data.redirectUri;
+      } else {
+        setOauthError(data.error || "Authorization failed.");
+      }
+    } catch (e) {
+      setOauthError("Connection error while authorizing.");
+    } finally {
+      setIsAuthorizing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOauthFlow) {
+      fetchOauthAppInfo();
+    }
+  }, [isOauthFlow]);
 
   const fetchDeveloperApps = async () => {
     setIsFetchingApps(true);
@@ -428,7 +494,11 @@ export default function App() {
 
       if (success) {
         setSuccessUsername(cleanUser);
-        setPage(8);
+        if (isOauthFlow) {
+          setPage(9);
+        } else {
+          setPage(8);
+        }
         fetchAdminUsers();
       } else {
         setLoginError(apiError || "Incorrect Sassword! Please try again.");
@@ -1983,9 +2053,101 @@ export default function App() {
                                       </button>
                                     </div>
                                   </div>
+                                  <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '8px 0 4px 0' }}></div>
+                                  <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                    <div>
+                                      <span style={{ fontSize: '10px', color: '#64748B', display: 'block' }}>Auth Credits:</span>
+                                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#10B981', display: 'block' }}>🟢 Unlimited (Lifetime)</span>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                      <span style={{ fontSize: '10px', color: '#64748B', display: 'block' }}>API Limit:</span>
+                                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A', display: 'block' }}>100 req/sec</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Integration Guide accordion */}
+                        {developerApps.length > 0 && (
+                          <div style={{ marginTop: '16px', border: '1.5px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowGuide(!showGuide);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                backgroundColor: '#F8FAFC',
+                                border: 'none',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                ⚡ How to Integrate (API Guide)
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#64748B' }}>{showGuide ? "▲" : "▼"}</span>
+                            </button>
+
+                            {showGuide && (
+                              <div style={{ padding: '16px', backgroundColor: '#FFFFFF', borderTop: '1.5px solid #E5E7EB', maxHeight: '240px', overflowY: 'auto', textAlign: 'left' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                  <div>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', display: 'block', marginBottom: '4px' }}>
+                                      Step 1: Redirect user to SansCounts
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '6px', lineHeight: '16px' }}>
+                                      Link your "Sign in with SansCounts" button to this URL to start authentication:
+                                    </span>
+                                    <code style={{ fontSize: '10px', backgroundColor: '#F1F5F9', padding: '6px 10px', borderRadius: '6px', color: '#0099FF', display: 'block', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                                      {`https://sanscounts.sanssiu.com/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI`}
+                                    </code>
+                                  </div>
+
+                                  <div style={{ height: '1px', backgroundColor: '#F1F5F9' }}></div>
+
+                                  <div>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', display: 'block', marginBottom: '4px' }}>
+                                      Step 2: Exchange Code for Token
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '6px', lineHeight: '16px' }}>
+                                      After login, we will redirect back with a `?code=AUTHORIZATION_CODE`. POST it to exchange for an access token:
+                                    </span>
+                                    <code style={{ fontSize: '10px', backgroundColor: '#F1F5F9', padding: '6px 10px', borderRadius: '6px', color: '#475569', display: 'block', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                                      {`POST https://sanscounts.sanssiu.com/api/oauth/token`}
+                                    </code>
+                                    <span style={{ fontSize: '10px', color: '#94A3B8', display: 'block', marginTop: '4px' }}>
+                                      Body: {'{'} client_id, client_secret (SAuth Key), code {'}'}
+                                    </span>
+                                  </div>
+
+                                  <div style={{ height: '1px', backgroundColor: '#F1F5F9' }}></div>
+
+                                  <div>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', display: 'block', marginBottom: '4px' }}>
+                                      Step 3: Fetch Verified User Profile
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '6px', lineHeight: '16px' }}>
+                                      Retrieve user details using the access token via GET request:
+                                    </span>
+                                    <code style={{ fontSize: '10px', backgroundColor: '#F1F5F9', padding: '6px 10px', borderRadius: '6px', color: '#475569', display: 'block', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                                      {`GET https://sanscounts.sanssiu.com/api/oauth/userinfo`}
+                                    </code>
+                                    <span style={{ fontSize: '10px', color: '#94A3B8', display: 'block', marginTop: '4px' }}>
+                                      Header: Authorization: Bearer YOUR_ACCESS_TOKEN
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -2058,7 +2220,7 @@ export default function App() {
                                       boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
                                     }}
                                   >
-                                    Proceed to License Payment ($2.99)
+                                    {devAppName.toLowerCase().includes('sans neat') ? "Proceed to Free Activation" : "Proceed to License Payment ($2.99)"}
                                   </button>
                                 </div>
                               )}
@@ -2066,43 +2228,66 @@ export default function App() {
                               {/* STEP 2: Payment */}
                               {devStep === "payment" && (
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px', margin: '0 0 4px 0' }}>Lifetime Developer License</h3>
-                                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', marginBottom: '16px', display: 'block' }}>$2.99 <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>one-time fee</span></span>
+                                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px', margin: '0 0 4px 0' }}>
+                                    {devAppName.toLowerCase().includes('sans neat') ? "Internal Product Registration" : "Lifetime Developer License"}
+                                  </h3>
+                                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', marginBottom: '16px', display: 'block' }}>
+                                    {devAppName.toLowerCase().includes('sans neat') ? "FREE ($0.00)" : "$2.99"}{" "}
+                                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>
+                                      {devAppName.toLowerCase().includes('sans neat') ? "internal license" : "one-time fee"}
+                                    </span>
+                                  </span>
                                   
                                   <div style={{ backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '12px', border: '1px solid #E2E8F0', marginBottom: '20px' }}>
                                     <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}><b>App Name:</b> {devAppName}</span>
                                     <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginTop: '2px' }}><b>Domain:</b> {devDomain}</span>
                                   </div>
 
-                                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>CREDIT OR DEBIT CARD</label>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-                                    <input
-                                      type="text"
-                                      placeholder="1234 5678 9876 5432"
-                                      maxLength={19}
-                                      value={cardNumber}
-                                      onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim())}
-                                      style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-                                      <input
-                                        type="text"
-                                        placeholder="MM / YY"
-                                        maxLength={5}
-                                        value={cardExpiry}
-                                        onChange={(e) => setCardExpiry(e.target.value)}
-                                        style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                                      />
-                                      <input
-                                        type="password"
-                                        placeholder="CVC"
-                                        maxLength={3}
-                                        value={cardCVC}
-                                        onChange={(e) => setCardCVC(e.target.value.replace(/\D/g, ''))}
-                                        style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                                      />
+                                  {devAppName.toLowerCase().includes('sans neat') ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                                      <div style={{ backgroundColor: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '24px' }}>🎁</span>
+                                        <div>
+                                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400E', display: 'block' }}>Internal Product Match!</span>
+                                          <span style={{ fontSize: '11px', color: '#B45309', display: 'block', marginTop: '2px', lineHeight: '15px' }}>
+                                            The application <b>"{devAppName}"</b> is registered as a SansSiu core product. Fully eligible for zero-cost activation.
+                                          </span>
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
+                                  ) : (
+                                    <>
+                                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>CREDIT OR DEBIT CARD</label>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                                        <input
+                                          type="text"
+                                          placeholder="1234 5678 9876 5432"
+                                          maxLength={19}
+                                          value={cardNumber}
+                                          onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim())}
+                                          style={{ width: '100%', height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                        />
+                                        <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                                          <input
+                                            type="text"
+                                            placeholder="MM / YY"
+                                            maxLength={5}
+                                            value={cardExpiry}
+                                            onChange={(e) => setCardExpiry(e.target.value)}
+                                            style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                          />
+                                          <input
+                                            type="password"
+                                            placeholder="CVC"
+                                            maxLength={3}
+                                            value={cardCVC}
+                                            onChange={(e) => setCardCVC(e.target.value.replace(/\D/g, ''))}
+                                            style={{ flex: 1, height: '42px', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '0 12px', color: '#0F172A', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
 
                                   {paymentError && (
                                     <p style={{ color: '#EF4444', fontSize: '12px', fontWeight: 600, marginBottom: '12px', margin: '0 0 12px 0' }}>{paymentError}</p>
@@ -2119,12 +2304,11 @@ export default function App() {
                                     </button>
                                     <button
                                       type="button"
-                                      disabled={isProcessingPayment || !cardNumber || !cardExpiry || !cardCVC}
+                                      disabled={isProcessingPayment || (!devAppName.toLowerCase().includes('sans neat') && (!cardNumber || !cardExpiry || !cardCVC))}
                                       onClick={async () => {
                                         setIsProcessingPayment(true);
                                         setPaymentError("");
                                         try {
-                                          // Simulate checkout verification
                                           await new Promise((r) => setTimeout(r, 1400));
                                           
                                           const res = await fetch(getApiUrl("/api/oauth/register-app"), {
@@ -2145,7 +2329,7 @@ export default function App() {
                                             setPaymentError(data.message || "Error finalizing app registration");
                                           }
                                         } catch (e) {
-                                          setPaymentError("Payment connection error. Please try again.");
+                                          setPaymentError("Connection error. Please try again.");
                                         } finally {
                                           setIsProcessingPayment(false);
                                         }
@@ -2163,7 +2347,7 @@ export default function App() {
                                         boxShadow: '0 4px 12px rgba(0, 153, 255, 0.25)'
                                       }}
                                     >
-                                      {isProcessingPayment ? "Verifying Payment..." : "Pay $2.99 & Register"}
+                                      {isProcessingPayment ? "Activating free keys..." : devAppName.toLowerCase().includes('sans neat') ? "Activate Free Auth Keys" : "Pay $2.99 & Register"}
                                     </button>
                                   </div>
                                 </div>
