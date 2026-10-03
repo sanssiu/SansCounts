@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "SansCounts user account profile",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "password": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["username", "firstName", "lastName"]
+    },
+    "DeveloperApp": {
+      "title": "DeveloperApp",
+      "description": "OAuth registered application",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "clientSecret": { "type": "string" },
+        "appName": { "type": "string" },
+        "redirectUri": { "type": "string" },
+        "owner": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["clientId", "appName", "redirectUri", "owner"]
+    },
+    "Email": {
+      "title": "Email",
+      "description": "SansMail inbox and sent messages",
+      "type": "object",
+      "properties": {
+        "sender": { "type": "string" },
+        "recipient": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["sender", "recipient", "subject", "body"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "SansCounts users collection"
+    },
+    "/developer_apps/{appId}": {
+      "schema": "DeveloperApp",
+      "description": "Registered developer apps collection"
+    },
+    "/emails/{emailId}": {
+      "schema": "Email",
+      "description": "Emails collection"
+    }
+  }
+}

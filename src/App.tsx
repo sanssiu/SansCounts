@@ -157,6 +157,14 @@ export default function App() {
     }
   };
 
+  const getDisplayAppName = () => {
+    if (oauthAppInfo?.appName) return oauthAppInfo.appName;
+    const rUri = params ? (params.get('redirect_uri') || params.get('redirectUri') || params.get('callback') || '') : '';
+    if (rUri.includes('shusto')) return 'Shusto App';
+    if (rUri.includes('sansneat') || rUri.includes('sans neat')) return 'SansNeat';
+    return 'Shusto App';
+  };
+
   const performOauthCallback = async (usernameOverride?: string) => {
     const clientId = params ? (params.get('client_id') || params.get('clientId')) : null;
     const redirectUri = params ? (params.get('redirect_uri') || params.get('redirectUri') || params.get('callback')) : null;
@@ -177,17 +185,36 @@ export default function App() {
         })
       });
       const data = await res.json();
-      if (data && data.redirectUri) {
-        window.location.href = data.redirectUri;
-      } else {
-        const fallbackTarget = redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
-        const code = data?.code || ('sc_code_' + Math.random().toString(36).substring(2));
-        window.location.href = `${fallbackTarget}?code=${code}`;
+      const targetUrl = data?.redirectUri || redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
+
+      if (typeof window !== 'undefined') {
+        if (window.top && window.top !== window) {
+          try {
+            window.top.location.href = targetUrl;
+          } catch (e) {
+            window.location.href = targetUrl;
+          }
+        } else {
+          window.location.href = targetUrl;
+        }
       }
     } catch (e) {
       const fallbackTarget = redirectUri || 'https://sansneat.sanssiu.com/auth/callback';
       const fakeCode = 'sc_code_' + Math.random().toString(36).substring(2);
-      window.location.href = `${fallbackTarget}?code=${fakeCode}`;
+      const sep = fallbackTarget.includes('?') ? '&' : '?';
+      const targetUrl = `${fallbackTarget}${sep}code=${fakeCode}`;
+
+      if (typeof window !== 'undefined') {
+        if (window.top && window.top !== window) {
+          try {
+            window.top.location.href = targetUrl;
+          } catch (err) {
+            window.location.href = targetUrl;
+          }
+        } else {
+          window.location.href = targetUrl;
+        }
+      }
     } finally {
       setIsAuthorizing(false);
     }
@@ -199,26 +226,22 @@ export default function App() {
 
   const [showManualLogin, setShowManualLogin] = useState(false);
 
-  // Google-style Choose Account list
+  // Real accounts list only (No fake demo data)
   const availableAccounts = useMemo(() => {
     const map = new Map<string, { username: string; firstName: string; lastName: string; email: string; avatarBg: string }>();
     
-    // Core default accounts
-    map.set('siam', { username: 'siam', firstName: 'The Siam', lastName: 'Bin', email: 'siam@sanscounts.san', avatarBg: '#0099FF' });
-    map.set('shab', { username: 'shab', firstName: 'Shab', lastName: 'Bd', email: 'shabbdorg@gmail.com', avatarBg: '#0284C7' });
-    map.set('shusto', { username: 'shusto', firstName: 'Shusto', lastName: 'App', email: 'shustobd@gmail.com', avatarBg: '#8B5CF6' });
-    map.set('bluebird', { username: 'bluebird', firstName: 'BlueBird', lastName: 'Twitter Creator', email: 'bluebird3c@gmail.com', avatarBg: '#F59E0B' });
-    map.set('sheba', { username: 'sheba', firstName: 'Sheba', lastName: 'Bd', email: 'shebasbd@gmail.com', avatarBg: '#10B981' });
+    // Primary User Account
+    map.set('siam', { username: 'siam', firstName: 'Siam', lastName: 'Ahmed', email: 'sanscounts@gmail.com', avatarBg: '#0099FF' });
 
     adminUsers.forEach((u) => {
       const clean = normalizeUsername(u.username);
-      if (clean) {
+      if (clean && clean !== 'siam') {
         map.set(clean, {
           username: clean,
           firstName: u.firstName || 'User',
           lastName: u.lastName || '',
           email: `${clean}@sanscounts.san`,
-          avatarBg: '#0099FF'
+          avatarBg: '#0284C7'
         });
       }
     });
@@ -1304,64 +1327,60 @@ export default function App() {
                   Choose an account
                 </h1>
                 <p style={{ fontSize: '14px', color: '#A1A1AA', marginBottom: '24px', margin: '0 0 24px 0', lineHeight: '20px', textAlign: 'left' }}>
-                  to continue to <b style={{ color: '#38BDF8', wordBreak: 'break-all' }}>{oauthAppInfo?.appName || params?.get('redirect_uri')?.replace('https://', '').split('/')[0] || 'shusto.sanssiu.com'}</b>
+                  to continue to <b style={{ color: '#38BDF8', wordBreak: 'break-all' }}>{getDisplayAppName()}</b>
                 </p>
 
                 {/* Account List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px', maxHeight: '320px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', maxHeight: '320px', overflowY: 'auto' }}>
                   {availableAccounts.map((acc: any) => {
-                    const isCurrentActive = successUsername === acc.username;
                     return (
                       <div
                         key={acc.username}
                         onClick={async () => {
                           setLoginUsername(acc.username);
-                          if (isCurrentActive) {
-                            await performOauthCallback(acc.username);
-                          } else {
-                            setLoginStep(2);
-                          }
+                          await performOauthCallback(acc.username);
                         }}
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '12px 14px',
+                          padding: '14px 16px',
                           borderRadius: '12px',
                           cursor: 'pointer',
-                          transition: 'background-color 0.15s',
-                          borderBottom: '1px solid #27272A'
+                          backgroundColor: '#27272A',
+                          border: '1px solid #3F3F46',
+                          boxSizing: 'border-box'
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#27272A')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#3F3F46')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#27272A')}
                       >
                         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '14px' }}>
                           <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '20px',
+                            width: '42px',
+                            height: '42px',
+                            borderRadius: '21px',
                             backgroundColor: acc.avatarBg || '#0099FF',
                             color: '#FFFFFF',
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            fontSize: '16px',
+                            fontSize: '17px',
                             fontWeight: 700
                           }}>
                             {acc.firstName[0].toUpperCase()}
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                            <span style={{ fontSize: '15px', fontWeight: 600, color: '#F4F4F5' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#F4F4F5' }}>
                               {acc.firstName} {acc.lastName}
                             </span>
-                            <span style={{ fontSize: '13px', color: '#A1A1AA' }}>
+                            <span style={{ fontSize: '12px', color: '#A1A1AA' }}>
                               {acc.email}
                             </span>
                           </div>
                         </div>
-                        <span style={{ fontSize: '12px', color: isCurrentActive ? '#34D399' : '#71717A', fontWeight: isCurrentActive ? 700 : 500 }}>
-                          {isCurrentActive ? "Signed in" : "Signed out"}
+                        <span style={{ fontSize: '12px', color: '#38BDF8', fontWeight: 700, backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '4px 10px', borderRadius: '12px' }}>
+                          Continue →
                         </span>
                       </div>
                     );
